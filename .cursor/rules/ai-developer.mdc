@@ -1,0 +1,120 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Developer Workflow - v3.1
+
+This document outlines the standard workflow for developing and maintaining the Crypto AI Assistant codebase. Following this process ensures code quality, consistency, and maintainability.
+
+---
+
+## Guiding Principles
+
+All development must adhere to the standards defined in `CONVENTIONS.md`. This includes coding style, testing standards, and commit message formats.
+
+---
+
+## 1. The Development Cycle
+
+### Step 1.1: Plan Your Work
+
+-   Consult the `dev-todo.md` to find a task. If you're picking up a new task, assign it to yourself or announce it to the team.
+
+### Step 1.2: Create a Branch
+
+-   All work must be done in a separate Git branch.
+-   Branch names **must** follow the Conventional Commits prefix format. This helps categorize work and automate changelogs.
+
+| Prefix     | Description                                         | Example Branch Name              |
+|------------|-----------------------------------------------------|----------------------------------|
+| `feat/`    | A new feature for the user.                         | `feat/add-new-cli-command`       |
+| `fix/`     | A bug fix for the user.                             | `fix/correct-trade-history-call` |
+| `docs/`    | Documentation-only changes.                         | `docs/update-dev-workflow`       |
+| `style/`   | Code style changes (formatting, etc.).              | `style/reformat-client-module`   |
+| `refactor/`| Code refactoring without changing external behavior.| `refactor/create-order-service`  |
+| `test/`    | Adding or improving tests.                          | `test/add-coverage-for-account`  |
+| `chore/`   | Build process, tooling, and other admin changes.    | `chore/update-pre-commit-hooks`  |
+
+### Step 1.2.5: Investigate Before Implementing
+
+-   **For bug fixes:** Use `grep`, `rg`, or IDE search to understand the full scope and all affected areas.
+-   **For features:** Check existing patterns in the codebase before designing new implementations.
+-   **For refactors:** Identify all usage points before changing interfaces or removing code.
+-   **Before keeping "compatibility" code:** Search codebase for actual usage: `grep -r "method_name" src/ tests/`
+
+### Step 1.3: Implement and Test
+
+-   Write your code, adhering to the project's coding conventions.
+-   **Scope Check:** If your changes grow beyond the original task scope, pause and either:
+    - Split into smaller tasks in `dev-todo.md`
+    - Document the expanded scope in your commit message
+-   **Centralize API calls** in `src/api/client.py`.
+-   **Place business logic** in modules within `src/core/`.
+-   **Expose new functionality** by adding or updating commands in `main.py`.
+-   All new code requires corresponding unit tests in the `tests/` directory.
+-   This project enforces a **minimum of 95% test coverage**.
+
+### Step 1.4: Run Quality Checks
+
+-   Before committing, and throughout development, run all local quality checks to ensure your changes meet our standards. The `pre-commit` hooks will run these automatically, but you can also run them manually:
+    ```bash
+    # Run all checks at once
+    pre-commit run --all-files
+
+    # Or run them individually:
+    ruff format .           # Format code
+    ruff check . --fix      # Lint and auto-fix
+    mypy src/ tests/        # Check static types. See `CONVENTIONS.md` for handling complex types like TypedDict Unions.
+    pytest                  # Run tests and check coverage
+    grep -r "def.*unused\|TODO\|FIXME" src/  # Check for dead code markers
+    ```
+-   **If a check fails:** Before attempting a manual fix, consider if the issue can be resolved automatically. Many `ruff` formatting and linting errors can be fixed by running the hooks again, as they modify the files in place. If `pytest` or `mypy` fail, analyze the output to understand the root cause before making changes.
+-   **For persistent failures:** Stage changes with `git add .` then re-run failing checks. Consider if your change scope is too large if multiple checks cascade fail.
+
+### Step 1.5: Keep Your Branch Updated
+
+-   To avoid complex merge conflicts, regularly update your branch with the latest changes from `main`:
+    ```bash
+    git pull --rebase origin main
+    ```
+
+### Step 1.6: Commit Your Changes
+
+-   Once your changes are implemented, tested, and have passed all quality checks, commit them.
+-   **Commit messages must follow the Conventional Commits specification.** This project uses `commitizen` to help format compliant messages. To commit, run:
+    ```bash
+    git commit
+    ```
+-   Then, follow the interactive prompts to create a well-formed commit message.
+-   **Important:** Do not push to remote repositories without explicit user consent. Always ask before running `git push`.
+
+---
+
+## 2. Code Review and Merge
+
+### Step 2.1: Open a Pull Request
+
+-   **Before pushing:** Confirm with the user before pushing your branch to GitHub.
+-   Push your branch to GitHub and open a Pull Request against the `main` branch.
+-   **Use the provided Pull Request template** to describe your changes, link to the relevant `dev-todo.md` task, and explain how to test them.
+
+### Step 2.2: Pass CI Checks and Get Approval
+
+-   The project's CI pipeline will automatically run all quality checks again.
+-   All checks must pass, and at least one team member must approve the PR before it can be merged.
+
+---
+
+## 3. Post-Merge Housekeeping
+
+-   After your PR is merged, update the `dev-todo.md` to mark your task as complete.
+-   If your work introduced the need for follow-up tasks, add them to the to-do list.
+
+---
+
+## Appendix: Managing Dependencies
+
+-   To add a new production dependency, add it to the `dependencies` list in `pyproject.toml`.
+-   To add a new development or test dependency, add it to the appropriate list under `[project.optional-dependencies]`.
+-   After updating `pyproject.toml`, run `pip install -e ".[dev,test]"` to update your environment.

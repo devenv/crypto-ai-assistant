@@ -1,0 +1,20 @@
+# Crypto AI Assistant Configuration
+
+[cli]
+# Default minimum USDT value to display an asset in the account info command.
+account_min_value = 10.0
+# Default number of trades to retrieve for the history command.
+history_limit = 10
+
+[analysis]
+# Default EMA periods for indicator calculations.
+ema_periods = [10, 21, 50]
+ema_short_period = 12
+ema_long_period = 26
+ema_signal_period = 9
+
+# Default RSI period.
+rsi_period = 14
+
+# Minimum number of data points required for analysis.
+min_data_points = 100
