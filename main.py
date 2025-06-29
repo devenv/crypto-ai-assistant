@@ -235,7 +235,8 @@ def get_open_orders(
     table = Table(title="Open Orders")
     table.add_column("Time", style="magenta", no_wrap=True)
     table.add_column("Symbol", style="cyan")
-    table.add_column("ID", justify="right")
+    table.add_column("ID", justify="right", no_wrap=True)
+    table.add_column("List ID", justify="right")
     table.add_column("Type", style="yellow")
     table.add_column("Side", style="bold")
     table.add_column("Price", justify="right")
@@ -248,12 +249,13 @@ def get_open_orders(
         table.add_row(
             order_time,
             order["symbol"],
-            str(order["orderId"]),
+            str(order.get("orderId", "N/A")),
+            str(order.get("orderListId", "N/A")),
             order["type"],
             f"[{side_style}]{order['side']}[/]",
-            f"{float(order['price']):.4f}",
-            f"{float(order['origQty']):.8f}",
-            order["status"],
+            f"{float(order['price']):,.8f}",
+            f"{float(order['origQty']):,.8f}",
+            f"[green]{order['status']}[/green]",
         )
     console.print(table)
 
@@ -348,7 +350,7 @@ def place_oco_order(
 @handle_api_error
 def cancel_order(
     cancel_type_arg: CancelOrderType = typer.Argument(..., help="Type of order to cancel: 'order' or 'oco'", case_sensitive=False),
-    symbol: str = typer.Argument(..., help="The symbol the order is on (e.g., BTCUSDT)"),
+    symbol: str = typer.Argument(..., help="The trading symbol (e.g., BTCUSDT)"),
     order_id: int = typer.Argument(..., help="The orderId or orderListId to cancel"),
 ) -> None:
     """Cancel an active order or OCO order."""
@@ -358,7 +360,11 @@ def cancel_order(
     # Map the user-friendly cancel type to the required OrderType for the service
     order_type_to_cancel = OrderType.OCO if cancel_type_arg == CancelOrderType.OCO else OrderType.LIMIT
 
-    result = order_service.cancel_order(order_type_to_cancel, symbol, order_id)
+    if order_type_to_cancel == OrderType.OCO:
+        result = order_service.cancel_order(order_type_to_cancel, symbol, order_list_id=order_id)
+    else:
+        result = order_service.cancel_order(order_type_to_cancel, symbol, order_id=order_id)
+
     if result:
         _display_order_confirmation(result)
 

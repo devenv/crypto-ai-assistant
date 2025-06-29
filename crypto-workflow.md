@@ -100,7 +100,8 @@ This document outlines a refined workflow for using the Crypto AI Assistant to a
 - **`place-oco`**: Place a new OCO (One-Cancels-the-Other) order. This is for the SELL side only to set a take-profit and a stop-loss.
   - `python main.py order place-oco <SYMBOL> <QUANTITY> <PRICE> <STOP_PRICE>`
 - **`cancel`**: Cancel an open single order or an entire OCO order.
-  - `python main.py order cancel <order|oco> <SYMBOL> <ID>`
+  - `python main.py order cancel order <SYMBOL> <ID>`
+  - `python main.py order cancel oco <SYMBOL> <LIST_ID>`
 
 ### **`exchange`**: Get market and exchange information
 - **`lotsize`**: Check symbol's LOT_SIZE filter for correct quantity precision.
