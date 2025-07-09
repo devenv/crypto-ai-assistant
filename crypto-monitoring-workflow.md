@@ -35,7 +35,8 @@ This phase covers actions to take when your live portfolio state diverges from `
      # Example: Placing a protective OCO for a new SOL position of 3.868
      python main.py order place-oco SOLUSDT 3.868 180 155.50
      ```
-   - **4. Update `current_plan.md`:** After the OCO is successfully placed, immediately update the plan. Mark the buy order as `FILLED` and the new OCO order as `PLACED`.
+   - **4. Update `current_plan.md`:** After the OCO is successfully placed, **IMMEDIATELY** update the plan. Mark the buy order as `FILLED` and the new OCO order as `PLACED`.
+   - **⚠️ NO EXCEPTIONS:** Never skip this step - an outdated plan will cause confusion and potential losses.
 
 **B. General Discrepancy Resolution:**
    - For other discrepancies (e.g., a missing asset, duplicate orders, incorrect stop-loss levels), the process is:
@@ -43,8 +44,16 @@ This phase covers actions to take when your live portfolio state diverges from `
      ```bash
      python main.py account history <SYMBOL>
      ```
+     - **⚠️ IMPORTANT:** Use the full trading pair symbol (e.g., `ETHUSDT`, `BTCUSDT`, `SOLUSDT`), not just the coin name.
+     - **Examples:**
+       ```bash
+       python main.py account history ETHUSDT --limit 10
+       python main.py account history BTCUSDT --limit 5
+       python main.py account history SOLUSDT
+       ```
    - **2. Execute the Command:** Run the appropriate command (e.g., `order cancel`).
-   - **3. Update `current_plan.md`:** Immediately after, update the plan to reflect the change (e.g., mark a position `SOLD` or an order `CANCELED`).
+   - **3. Update `current_plan.md`:** **IMMEDIATELY** after any action, update the plan to reflect the change (e.g., mark a position `SOLD` or an order `CANCELED`).
+   - **🚨 MANDATORY:** This is not optional. Every trade execution must be followed by an immediate plan update.
 
 **4. Get Fresh Market Context (Optional but Recommended):**
    - If the market is volatile, get updated technical indicators.
@@ -60,6 +69,18 @@ This phase covers actions to take when your live portfolio state diverges from `
    - **If action is required:** "Action Needed: The `ETH` buy order has filled. Proceeding with the Post-Fill Drill."
    - **If there's a warning:** "Warning: `BNB` price is approaching the stop-loss. Monitor closely."
 
+### **🚨 CRITICAL: Plan Maintenance Protocol**
+
+**GOLDEN RULE:** `current_plan.md` must **ALWAYS** reflect your live portfolio state. Any discrepancy is a risk.
+
+**When to Update the Plan:**
+- ✅ **Order fills** - Mark orders as `FILLED` and update position values
+- ✅ **Order cancellations** - Mark orders as `CANCELED`
+- ✅ **New positions** - Add new asset holdings with protection status
+- ✅ **Position exits** - Mark positions as `SOLD` or `EXITED`
+- ✅ **Stop-loss/take-profit hits** - Update position status and cash values
+- ✅ **Portfolio value changes** - Update total portfolio value regularly
+
 ---
 
 ## Appendix: Command Reference
@@ -71,6 +92,7 @@ This phase covers actions to take when your live portfolio state diverges from `
   - `python main.py account orders`
 - **`history`**: Fetch recent trade history for a specific symbol.
   - `python main.py account history <SYMBOL> [--limit <LIMIT>]`
+  - **⚠️ SYMBOL Format:** Use full trading pair (e.g., `ETHUSDT`, `BTCUSDT`, `SOLUSDT`), not just coin name
 
 ### **`order`**: Place and cancel trading orders
 - **`place-limit`**: Place a new limit order.
