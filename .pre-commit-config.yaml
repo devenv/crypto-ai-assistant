@@ -37,6 +37,7 @@ repos:
       # - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        exclude: '^\.secrets\.baseline$'
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
