@@ -1,0 +1,2086 @@
+## 🚨 **CRITICAL WARNING: NEVER USE --no-verify** ⚠️
+
+**❌ ABSOLUTE PROHIBITION: `git commit --no-verify` IS FORBIDDEN FOR CODE QUALITY ISSUES**
+
+**⚠️ EMERGENCY-ONLY EXCEPTIONS:**
+- ✅ Pre-commit hook configuration is broken (NOT code issues)
+- ✅ CI/CD pipeline tool failures (NOT code quality failures)
+- ✅ Development tool installation issues (NOT linting/test failures)
+
+**❌ NEVER BYPASS FOR:**
+- Code quality failures (ruff, mypy, pytest)
+- Test failures or insufficient coverage
+- Import errors or syntax issues
+- Architecture violations
+- "I'll fix it later" situations
+- Time pressure or deadlines
+- ANY code-related problems
+
+**🔒 IF YOU MUST BYPASS (TOOL ISSUES ONLY):**
+```bash
+# MANDATORY: Prove it's a tool issue, not code
+python scripts/staged-check.py  # Must show tool failure, not code failure
+
+# Document the EXACT tool problem
+git commit --no-verify -m "fix: bypass due to [SPECIFIC TOOL ISSUE]
+
+JUSTIFICATION: [EXACT TOOL ERROR]
+CODE STATUS: All quality checks pass manually
+FOLLOW-UP: Fix tool configuration immediately"
+```
+
+**🚨 REMEMBER: Quality issues are BLOCKING ERRORS, not optional warnings!**
+
+---
+
+## ⚡ **AUTOFIX-FIRST DEVELOPMENT PROTOCOL (MANDATORY)**
+
+**🚨 CRITICAL**: Every development session MUST follow this automation-first approach to maintain code quality and reduce manual effort.
+
+### **🎯 MANDATORY PRE-DEVELOPMENT CHECKLIST**
+
+**Before writing ANY code, ALWAYS run this automation sequence:**
+
+```bash
+# STEP 1: Full automated cleanup (REQUIRED - 30 seconds)
+venv/Scripts/ruff.exe format .                      # Auto-format all code
+venv/Scripts/ruff.exe check . --fix --unsafe-fixes  # Fix all auto-fixable issues
+
+# STEP 2: Assess remaining issues (REQUIRED - 30 seconds)
+venv/Scripts/ruff.exe check . --output-format=concise | head -20
+
+# STEP 3: Environment verification (REQUIRED - 30 seconds)
+python scripts/staged-check.py --stage env
+```
+
+**Total time investment: 90 seconds to prevent 20+ minutes of manual fixes later**
+
+### **🔧 MANDATORY POST-CHANGE AUTOMATION**
+
+**After ANY code modification, IMMEDIATELY run:**
+
+```bash
+# Auto-fix new issues introduced by changes
+venv/Scripts/ruff.exe format .
+venv/Scripts/ruff.exe check . --fix --unsafe-fixes
+
+# Quick verification that changes work
+python -m py_compile $(git diff --name-only | grep '\.py$' | head -5)
+```
+
+### **🚫 NEVER DO THESE (Anti-Patterns)**
+
+**❌ FORBIDDEN practices that waste time:**
+- Manual code formatting (let ruff handle it)
+- Manual import organization (automated via `--fix`)
+- Manual whitespace cleanup (automated via `--unsafe-fixes`)
+- Manual variable cleanup (automated via `--unsafe-fixes`)
+- Skipping the autofix sequence "to save time" (costs 10x more time later)
+
+### **✅ ALWAYS DO THESE (Required Practices)**
+
+**Mandatory automation practices:**
+- Run autofix BEFORE starting development work
+- Run autofix AFTER every significant change
+- Use `--unsafe-fixes` flag (we want maximum automation)
+- Check remaining issues with `--output-format=concise`
+- Address only the non-automatable issues manually
+
+## 🚨 **CODE QUALITY AS BLOCKING ERRORS (MANDATORY)**
+
+**⚠️ CRITICAL PRINCIPLE**: ALL code quality issues are treated as BLOCKING ERRORS, not warnings that can be ignored.
+
+### **🔴 ZERO-TOLERANCE QUALITY POLICY**
+
+**NEVER proceed with development if ANY of these quality checks fail:**
+
+| Quality Check | Tool | Command | Error Treatment |
+|---|----|----|-----|
+| **Syntax Errors** | Python | `python -m py_compile file.py` | ❌ BLOCKING - Cannot proceed |
+| **Import Errors** | Python | `python -c "import module"` | ❌ BLOCKING - Cannot proceed |
+| **Linting Violations** | Ruff | `ruff check .` | ❌ BLOCKING - Must fix all issues |
+| **Formatting Issues** | Ruff | `ruff format . --check` | ❌ BLOCKING - Must auto-format |
+| **Type Violations** | MyPy | `mypy src/ tests/` | ❌ BLOCKING - Must fix or suppress with justification |
+| **Test Failures** | Pytest | `pytest` | ❌ BLOCKING - All tests must pass |
+| **Architecture Violations** | Custom | `python scripts/staged-check.py --stage arch` | ❌ BLOCKING - Must fix patterns |
+
+### **🛑 MANDATORY STOP CONDITIONS**
+
+**IMMEDIATELY STOP development work if encountering:**
+
+```bash
+# Any of these outputs require IMMEDIATE attention:
+ruff check .                     # ❌ If ANY issues reported
+python -m mypy src/             # ❌ If ANY type errors
+pytest                         # ❌ If ANY test failures
+python scripts/staged-check.py  # ❌ If ANY stage fails
+python -c "from main import app" # ❌ If import fails
+```
+
+**⚠️ FORBIDDEN BYPASSES:**
+- ❌ Using `# noqa` without architectural justification
+- ❌ Using `# type: ignore` without explanation
+- ❌ Committing with `--no-verify` for ANY code quality issues
+- ❌ Proceeding with failing tests ("I'll fix them later")
+- ❌ Ignoring test failures ("I'll fix them later")
+- ❌ "Quick commits" that skip quality checks
+- ❌ "It's just a small change" bypasses
+- ❌ Deadline pressure as justification for quality shortcuts
+- ❌ "The CI will catch it" mentality
+
+### **✅ ACCEPTABLE EXCEPTIONS (Rare Cases Only)**
+
+**Only these patterns are acceptable to suppress:**
+
+```python
+# E402 - Architectural necessity (main.py only)
+import sys
+sys.path.insert(0, "src")
+from api.client import BinanceClient  # noqa: E402 - Required for src layout
+
+# Type ignores - With clear justification
+result = api_call()  # type: ignore[no-any-return] - Third-party API returns Any
+
+# Test coverage - External libraries only
+def test_external_library():
+    # pragma: no cover - Testing external dependency behavior
+    pass
+```
+
+### **⚡ QUALITY-FIRST DEVELOPMENT WORKFLOW**
+
+**Every development action MUST follow this pattern:**
+
+```bash
+# 1. BEFORE any code changes
+python scripts/staged-check.py --stage env  # ❌ STOP if fails
+
+# 2. AFTER any code changes
+venv/Scripts/ruff.exe format .              # ❌ STOP if fails
+venv/Scripts/ruff.exe check .               # ❌ STOP if issues remain
+python -m py_compile $(git diff --name-only | grep '\.py$')  # ❌ STOP if fails
+
+# 3. BEFORE any commit
+python scripts/staged-check.py              # ❌ STOP if any stage fails
+```
+
+**🎯 SUCCESS CRITERIA:**
+- Zero ruff violations
+- Zero mypy errors
+- Zero test failures
+- All architectural checks pass
+- Clean git status with all changes working
+
+### **⚖️ QUALITY ENFORCEMENT & CONSEQUENCES**
+
+**🚨 AUTOMATIC ENFORCEMENT MECHANISMS:**
+
+```bash
+# Pre-commit hooks (configured to BLOCK commits)
+ruff check .                 # ❌ Blocks commit if violations found
+mypy src/ tests/            # ❌ Blocks commit if type errors
+pytest                      # ❌ Blocks commit if tests fail
+python scripts/staged-check.py --stage arch  # ❌ Blocks commit if architecture violations
+```
+
+### **🔐 ANTI-CHEATING SAFEGUARDS**
+
+**🚨 PRE-COMMIT HOOKS ARE MANDATORY AND NON-NEGOTIABLE**
+
+**❌ ZERO TOLERANCE FOR BYPASS ATTEMPTS:**
+- Pre-commit hooks are **NOT OPTIONAL** - they are quality gatekeepers
+- `--no-verify` is **NOT** a development convenience tool
+- Quality standards apply to **ALL** commits, regardless of size or urgency
+- **NO EXCEPTIONS** for "quick fixes", "small changes", or "urgent deployments"
+
+**🔍 BYPASS DETECTION MECHANISMS:**
+
+```bash
+# Automatic detection of bypass attempts
+git log --oneline | grep "no-verify"           # Audit trail of bypasses
+git log --grep="fix.*later" --grep="quick.*fix" # Red flags in commit messages
+pre-commit install --install-hooks              # Ensure hooks are installed
+pre-commit run --all-files                      # Manual verification possible
+```
+
+**⚠️ BYPASS INVESTIGATION PROTOCOL:**
+1. **Every `--no-verify` commit triggers automatic review**
+2. **Commit message must contain detailed technical justification**
+3. **Follow-up fix must be provided within 60 minutes**
+4. **Repeated bypasses result in mandatory training**
+
+**🛡️ INTEGRITY VERIFICATION COMMANDS:**
+```bash
+# Verify hooks are properly installed
+pre-commit install --install-hooks
+ls -la .git/hooks/pre-commit                   # Should exist and be executable
+
+# Verify quality checks actually work
+python scripts/staged-check.py                 # Must pass completely
+git status --porcelain                         # Must show clean working directory
+```
+
+**📊 QUALITY COMPLIANCE MONITORING:**
+- Weekly audit of `--no-verify` usage across all commits
+- Monthly review of quality check failure patterns
+- Quarterly assessment of bypass justification validity
+- Annual review of quality enforcement effectiveness
+
+**📋 QUALITY FAILURE RESPONSE PROTOCOL:**
+
+| Violation Type | Response Time | Action Required |
+|---|----|----|
+| **Syntax/Import Errors** | ⏱️ IMMEDIATE | Fix within 5 minutes or revert changes |
+| **Linting Violations** | ⏱️ IMMEDIATE | Run autofix, resolve remaining issues |
+| **Type Errors** | ⏱️ 15 minutes | Fix type annotations or add justified suppressions |
+| **Test Failures** | ⏱️ 30 minutes | Fix failing tests or revert breaking changes |
+| **Coverage Drops** | ⏱️ 60 minutes | Add missing tests or revert uncovered code |
+| **Architecture Violations** | ⏱️ 30 minutes | Fix import patterns or discuss with team |
+
+**🚫 CONSEQUENCES FOR BYPASSING QUALITY CHECKS:**
+
+**📈 ESCALATING ENFORCEMENT LADDER:**
+
+1. **First Bypass**:
+   - ⚠️ Formal warning + mandatory quality training session
+   - 📋 Documentation in development record
+   - 🔍 All future commits require manual quality verification
+
+2. **Second Bypass**:
+   - 🚨 Mandatory code review for ALL commits (minimum 2 approvers)
+   - 📚 Re-completion of development onboarding process
+   - 🎯 Weekly quality compliance check-ins
+
+3. **Third Bypass**:
+   - 🔒 **Temporary removal of direct commit privileges** (2 weeks)
+   - 👥 All changes must go through Pull Request review process
+   - 📖 Mandatory architecture and quality standards training
+
+4. **Persistent Violations (4+)**:
+   - 🏗️ **Complete architecture review and process improvement plan**
+   - 👨‍💼 **Escalation to technical leadership**
+   - 🔄 **Probationary period with supervised development**
+
+**🚨 IMMEDIATE CONSEQUENCES FOR INTENTIONAL CHEATING:**
+- **Quality standard violations with intent to bypass** → Immediate escalation to level 3
+- **Coaching others to bypass quality checks** → Immediate escalation to level 4
+- **Systematic quality avoidance patterns** → Technical leadership review
+
+**💰 COST OF BYPASSES:**
+- **Technical debt accumulation**: Each bypass creates 3-5x maintenance cost
+- **Team velocity impact**: Quality issues slow down entire development team
+- **Production risk**: Bypassed quality checks increase deployment failure risk by 400%
+- **Developer confidence**: Quality shortcuts erode codebase trust and team morale
+
+**🎯 POSITIVE REINFORCEMENT FOR QUALITY COMPLIANCE:**
+- Consistent quality compliance → Increased autonomy
+- Quality improvements → Recognition in team reviews
+- Zero quality violations for 1 month → Quality champion status
+
+### **🎖️ SUCCESS METRICS**
+
+**Your development session is following the protocol correctly when:**
+- Manual fix time < 5 minutes per session
+- Ruff autofix handles 85%+ of quality issues
+- You focus effort on architecture/business logic, not formatting
+- Quality pipeline passes consistently without manual intervention
+
+---
+
+## 🏗️ **SYSTEM ARCHITECTURE KNOWLEDGE**
+
+**⚠️ CRITICAL**: Understanding these architectural patterns is mandatory for all development work.
+
+### **📦 Package Structure & Import Architecture**
+
+**The Crypto AI Assistant uses a "src layout" package structure:**
+
+```
+crypto-ai-assistant/
+├── main.py                 # CLI entry point (modifies sys.path)
+├── pyproject.toml         # Package configuration
+├── src/                   # Source package root
+│   ├── __init__.py        # (empty)
+│   ├── api/               # API client and models
+│   │   ├── __init__.py    # Uses relative imports: from .client import
+│   │   ├── client.py      # Core Binance API client
+│   │   ├── enums.py       # Order types, sides, etc.
+│   │   ├── exceptions.py  # API-specific exceptions
+│   │   └── models.py      # TypedDict models
+│   ├── core/              # Business logic
+│   │   ├── __init__.py    # Uses relative imports: from .account import
+│   │   ├── account.py     # Account management
+│   │   ├── config.py      # Configuration loading
+│   │   ├── orders.py      # Order management
+│   │   └── [other modules]
+├── tests/                 # Mirror src/ structure
+│   ├── conftest.py        # Test configuration (modifies sys.path)
+│   ├── api/               # API tests
+│   ├── core/              # Core logic tests
+│   └── integration/       # Integration tests
+└── scripts/               # Development tools
+    ├── staged-check.py    # Custom quality pipeline
+    └── setup-dev.py       # Environment setup
+```
+
+### **🔗 Import Pattern Rules (MANDATORY)**
+
+**Different files use different import patterns based on their location:**
+
+| File Location | Import Pattern | Example |
+|---------------|----------------|---------|
+| **main.py** | Direct module imports | `from api.client import BinanceClient` |
+| **src/*/module.py** | Direct module imports | `from api.enums import OrderSide` |
+| **src/*/__init__.py** | Relative imports | `from .client import BinanceClient` |
+| **tests/*.py** | Explicit src prefix | `from src.api.client import BinanceClient` |
+
+**❌ NEVER use these patterns:**
+- `from src.api.client import` (in main.py or src/ files)
+- `from api.client import` (in __init__.py files)
+
+**Why this works:**
+1. `main.py` adds `src/` to `sys.path`: `sys.path.insert(0, str(src_path))`
+2. `tests/conftest.py` adds project root to path
+3. Package is installable via `pip install -e .` with `[tool.setuptools.packages.find] where = ["src"]`
+
+### **⚙️ Build System & Entry Points**
+
+**pyproject.toml configuration:**
+- **Build backend**: `setuptools.build_meta`
+- **Package discovery**: `[tool.setuptools.packages.find] where = ["src"]`
+- **Entry points**:
+  - CLI: `crypto-cli = "main:app"`
+
+**Environment setup pattern:**
+```bash
+# Install in development mode (creates .egg-info in src/)
+pip install -e ".[dev,test]"
+
+# This allows imports to work correctly:
+python -c "from api.client import BinanceClient"  # ✅ Works
+python -c "import src.api.client"                  # ❌ Wrong pattern
+```
+
+### **🧪 Test Architecture**
+
+**Test import patterns (in `tests/conftest.py`):**
+```python
+# Path setup for tests
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Now tests can import:
+from src.api.client import BinanceClient     # ✅ Correct for tests
+from main import app                         # ✅ Access main app
+```
+
+**Test fixture patterns:**
+- Mock environment variables (API keys) in `conftest.py`
+- Reset main app state between tests
+- Use `pytest-mock` for mocking: `mocker.patch()`
+
+### **🔍 Quality Pipeline Architecture**
+
+**Custom staged quality system (`scripts/staged-check.py`):**
+
+| Stage | Purpose | Tools | Recovery |
+|-------|---------|-------|----------|
+| **env** | Environment verification | Python version, virtual env, imports | `python scripts/setup-dev.py` |
+| **format** | Code formatting & linting | `ruff format`, `ruff check` | Add `--fix` flag |
+| **types** | Static type checking | `mypy` | See `CONVENTIONS.md` for TypedDict patterns |
+| **tests** | Tests & coverage | `pytest` | Add tests for uncovered code |
+
+**Quality pipeline commands:**
+```bash
+# Run all stages
+python scripts/staged-check.py
+
+# Run specific stage with auto-fix
+python scripts/staged-check.py --stage format --fix
+
+# Alternative shortcuts
+make check    # Full pipeline
+make fix      # Auto-fix formatting
+make test     # Tests only
+```
+
+### **📋 Configuration Management**
+
+**Core configuration files:**
+- `pyproject.toml` - Package metadata, dependencies, tool configuration
+- `src/core/config.toml` - Application settings (loaded via `importlib.resources`)
+- `.env` - API keys and secrets (not committed)
+
+**Configuration loading pattern:**
+```python
+# In src/core/config.py
+import importlib.resources
+files = importlib.resources.files("core")
+with files.joinpath("config.toml").open("r") as f:
+    config = toml.load(f)
+```
+
+---
+
+## 🚀 Quick Start for AI Developers
+
+**New to this codebase? Start here:**
+
+```bash
+# One-command setup
+python scripts/setup-dev.py
+
+# Activate environment (Windows)
+.\venv\Scripts\Activate.ps1
+
+# Run quality checks
+make check
+
+# Or alternatively:
+python scripts/staged-check.py
+```
+
+**Common Commands:**
+- `make help` - Show all available commands
+- `make fix` - Auto-fix formatting and linting
+- `make test` - Run tests with coverage
+- `make check` - Full quality check pipeline
+
+---
+
+## 1. The Development Cycle
+
+### Step 1.1: Plan Your Work
+
+-   Consult the `dev-todo.md` to find a task. If you're picking up a new task, assign it to yourself or announce it to the team.
+
+### Step 1.2: Create a Branch
+
+-   All work must be done in a separate Git branch.
+-   Branch names **must** follow the Conventional Commits prefix format. This helps categorize work and automate changelogs.
+
+| Prefix     | Description                                         | Example Branch Name              |
+|------------|-----------------------------------------------------|----------------------------------|
+| `feat/`    | A new feature for the user.                         | `feat/add-new-cli-command`       |
+| `fix/`     | A bug fix for the user.                             | `fix/correct-trade-history-call` |
+| `docs/`    | Documentation-only changes.                         | `docs/update-dev-workflow`       |
+| `style/`   | Code style changes (formatting, etc.).              | `style/reformat-client-module`   |
+| `refactor/`| Code refactoring without changing external behavior.| `refactor/create-order-service`  |
+| `test/`    | Adding or improving tests.                          | `test/add-coverage-for-account`  |
+| `chore/`   | Build process, tooling, and other admin changes.    | `chore/update-pre-commit-hooks`  |
+
+### Step 1.2.5: Environment Readiness Assessment
+
+**Before making any changes, verify your development environment:**
+
+```bash
+# Quick environment check
+python scripts/staged-check.py --stage env
+
+# Or verify manually:
+python --version                    # Verify Python 3.10+
+python -c "import src.api.client"   # Verify core imports work
+which python                        # Confirm virtual environment
+```
+
+**Environment Recovery Patterns:**
+- **Import errors** → Run `python scripts/setup-dev.py`
+- **Missing tools** → Run `make install` or `pip install -e ".[dev,test]"`
+- **Virtual env issues** → Deactivate, delete `venv/`, run setup script
+
+### Step 1.2.7: Codebase Context Assessment
+
+**Understand existing patterns before implementing changes:**
+
+```bash
+# Assess current project state
+git status                          # Current branch state
+git log --oneline -5                # Recent changes
+find tests/ -name "*.py" | head -5  # Existing test patterns
+grep -r "fixture" tests/ | head -3  # Fixture patterns in use
+pytest --collect-only | tail -5     # Current test inventory
+```
+
+### Step 1.3: Implement and Test
+
+-   Write your code, adhering to the project's coding conventions.
+-   **Scope Check:** If your changes grow beyond the original task scope, pause and either:
+    - Split into smaller tasks in `dev-todo.md`
+    - Document the expanded scope in your commit message
+-   **Centralize API calls** in `src/api/client.py`.
+-   **Place business logic** in modules within `src/core/`.
+-   **Expose new functionality** by adding or updating commands in `main.py`.
+-   All new code requires corresponding unit tests in the `tests/` directory.
+
+### Step 1.4: Staged Quality Check Pipeline
+
+**🚨 MANDATORY**: Always start with the AUTOFIX-FIRST PROTOCOL before running staged checks.
+
+**Primary Workflow (REQUIRED):**
+
+```bash
+# PHASE 1: Automation First (90 seconds - MANDATORY before any development)
+venv/Scripts/ruff.exe format .                      # Auto-format
+venv/Scripts/ruff.exe check . --fix --unsafe-fixes  # Fix all auto-fixable
+venv/Scripts/ruff.exe check . --output-format=concise | head -20  # Review remaining
+python scripts/staged-check.py --stage env          # Environment check
+
+# PHASE 2: Staged Pipeline (only if needed for remaining issues)
+python scripts/staged-check.py --stage format --fix    # Should be minimal after Phase 1
+python scripts/staged-check.py --stage types           # Type checking
+python scripts/staged-check.py --stage tests           # Tests & coverage
+```
+
+**Alternative Shortcuts (for experienced developers):**
+
+```bash
+# Complete autofix pipeline
+python scripts/staged-check.py --fix
+
+# Legacy approach (still works but less efficient)
+make fix && make check
+```
+
+**🔧 AUTOFIX-FIRST PHILOSOPHY (UPDATED):**
+
+**Ruff automation capabilities (use these FIRST):**
+- ✅ **Formatting**: All code style issues (spacing, indentation, line length)
+- ✅ **Import sorting**: Organize imports automatically
+- ✅ **Trailing whitespace**: Remove automatically
+- ✅ **Unused variables**: Remove with `--unsafe-fixes`
+- ✅ **List/Set comprehensions**: Convert automatically
+- ✅ **Exception chaining**: Fix with `--unsafe-fixes`
+
+**Focus manual effort ONLY on:**
+- ❌ **Import organization by logic** (E402 - modules after sys.path modification)
+- ❌ **Complex exception handling** (Some B904 cases requiring context)
+- ❌ **Architecture violations** (Wrong import patterns)
+- ❌ **Test coverage gaps** (Domain knowledge required)
+
+#### **🎯 Manual Issue Resolution Guide**
+
+**For the 15% of issues that require human decision:**
+
+**E402 Import Issues (Module level import not at top of file):**
+```python
+# ACCEPTABLE PATTERN in main.py (architectural necessity):
+import sys
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+# noqa: E402 - Required for src layout architecture
+from api.client import BinanceClient
+
+# SOLUTION: Add # noqa: E402 comment for architectural necessities
+# ONLY in main.py and test files with sys.path manipulation
+```
+
+**B904 Exception Chaining (Within except clause, raise exceptions):**
+```python
+# USER-FACING ERRORS (hide implementation details):
+try:
+    api_call()
+except APIError as e:
+    raise typer.Exit(code=1) from None  # Hide traceback from user
+
+# DEBUGGING ERRORS (preserve error chain):
+try:
+    process_data()
+except Exception as e:
+    raise ProcessingError(f"Failed to process: {e}") from e
+```
+
+**Import Pattern Architecture Violations:**
+```python
+# CORRECT patterns by file location:
+# main.py:           from api.client import BinanceClient
+# src/core/file.py:  from api.client import BinanceClient
+# src/api/__init__.py: from .client import BinanceClient
+# tests/test_file.py: from src.api.client import BinanceClient
+```
+
+**Test Coverage Gaps:**
+```bash
+# Generate coverage report to identify gaps:
+pytest --cov=src --cov-report=html
+# Focus on: exception paths, edge cases, error conditions
+```
+
+### Step 1.4.5: Immediate Change Verification Protocol (MANDATORY)
+
+**Within 60 seconds of any code change, verify implementation integrity:**
+
+```bash
+# Immediate syntax and import verification
+python -m py_compile $(git diff --name-only HEAD~1 | grep '\.py$')   # Syntax check changed files
+python -c "import sys; sys.path.append('src'); import $(basename $CHANGED_MODULE .py)" # Import check
+
+# Immediate functional verification
+python -m pytest tests/$(basename $CHANGED_FILE .py | sed 's/^test_//').py -x  # Quick test run
+python scripts/staged-check.py --stage env                          # Environment integrity
+```
+
+**Verification Success Criteria:**
+- [ ] All changed files compile without syntax errors
+- [ ] All new imports resolve correctly
+- [ ] Core tests for changed modules pass
+- [ ] Environment stage verification passes
+
+**⚠️ CRITICAL**: If any verification fails, **STOP** and fix immediately. Do not proceed to quality pipeline with broken changes.
+
+**🚨 ZERO-COMPROMISE RULE**: ANY quality failure is a BLOCKING ERROR that must be resolved before proceeding.
+
+**Why This Matters**:
+- Prevents the "disappeared order" problem from trading workflow
+- Ensures changes are actually working as intended immediately
+- Maintains codebase integrity and prevents technical debt accumulation
+- Enforces consistent quality standards across all development work
+
+**🛑 IMMEDIATE FAILURE RESPONSE:**
+```bash
+# If ANY verification fails:
+git stash                           # Save current work
+git reset --hard HEAD              # Return to known good state
+python scripts/staged-check.py     # Verify environment is clean
+# Then fix the issue properly before proceeding
+```
+
+#### Step 1.4.1: Improving Test Coverage
+
+**When test coverage needs improvement:**
+
+1. **Identify Uncovered Code:**
+   ```bash
+   # Generate detailed coverage report
+   pytest --cov=src --cov-report=html
+   # Open htmlcov/index.html to see visual coverage report
+   ```
+
+2. **Analyze Missing Coverage Systematically:**
+   - **Error/Exception Paths:** Often uncovered are error handling branches, exception scenarios, and edge cases
+   - **Conditional Logic:** `if/else` branches, especially negative conditions and error states
+   - **Private Methods:** Internal methods that may not be directly tested
+   - **Imports/Setup:** Module-level code that runs on import
+
+3. **Add Targeted Test Cases:**
+   ```python
+   # Example: Testing exception handling
+   def test_api_error_with_json_decode_error():
+       with patch('module.func') as mock_func:
+           mock_func.side_effect = JSONDecodeError("Invalid", "", 0)
+           with pytest.raises(APIError):
+               service_method()
+
+   # Example: Testing negative conditions
+   def test_validation_failure():
+       result = validator.validate(invalid_data)
+       assert not result.is_valid
+       assert "error message" in result.errors
+   ```
+
+4. **Common Coverage Patterns to Address:**
+   - **Mock External Dependencies:** Use `patch()` to mock API calls, file operations, or network requests
+   - **Test Error Conditions:** Force exceptions, timeouts, invalid responses
+   - **Exercise All Branches:** Ensure both `if` and `else` paths are covered
+   - **Fixture Issues:** Update test fixtures to match actual class constructors/dependencies
+
+5. **Debugging Test Failures:**
+   ```bash
+   # Run specific failing tests with verbose output
+   pytest tests/specific_test.py::test_name -v --tb=short
+
+   # Run with coverage to see what's still missing
+   pytest tests/ --cov=src --cov-report=term-missing
+   ```
+
+6. **When Adding Tests Breaks Existing Ones:**
+   - **Fixture Conflicts:** Check that new test fixtures don't interfere with existing ones
+   - **Mock Scope:** Ensure mocks are scoped correctly (use context managers or proper teardown)
+   - **Import Issues:** Verify that patches target the correct import path
+   - **Test Isolation:** Each test should be independent and not rely on other tests' state
+
+7. **Coverage Quality Over Quantity:**
+   - Focus on meaningful test cases that actually validate behavior
+   - Don't just "hit" lines of code - test the logic and edge cases
+   - Prioritize error scenarios and boundary conditions
+   - Ensure tests would actually catch regressions
+
+**Coverage Troubleshooting Checklist:**
+- [ ] All public methods have tests
+- [ ] Error/exception paths are tested
+- [ ] Conditional branches (if/else) are covered
+- [ ] Edge cases and boundary conditions tested
+- [ ] External dependencies properly mocked
+- [ ] Test fixtures match actual class dependencies
+- [ ] No dead/unreachable code exists
+
+### Step 1.5: Keep Your Branch Updated
+
+-   To avoid complex merge conflicts, regularly update your branch with the latest changes from `main`:
+    ```bash
+    git pull --rebase origin main
+    ```
+
+### Step 1.6: Commit Your Changes
+
+**🚨 PRE-COMMIT REQUIREMENTS (ALL MUST PASS):**
+
+```bash
+# MANDATORY checks before ANY commit:
+python scripts/staged-check.py              # ❌ ALL stages must pass
+git status --porcelain | wc -l              # ❌ Must show 0 (clean working directory)
+python -c "from main import app; print('✅ Entry points working')"  # ❌ Must succeed
+```
+
+**⚠️ COMMIT BLOCKERS - NEVER commit if ANY of these fail:**
+- ❌ Ruff violations present (`ruff check .`)
+- ❌ MyPy type errors (`mypy src/ tests/`)
+- ❌ Test failures (`pytest`)
+- ❌ Architecture violations (`python scripts/staged-check.py --stage arch`)
+- ❌ Import errors (`python -c "from main import app"`)
+
+**✅ ONLY commit when ALL quality checks pass:**
+
+-   Once your changes are implemented, tested, and have **PASSED ALL QUALITY CHECKS**, commit them.
+-   **Commit messages must follow the Conventional Commits specification.** This project uses `commitizen` to help format compliant messages. To commit, run:
+    ```bash
+    git commit
+    ```
+-   Then, follow the interactive prompts to create a well-formed commit message.
+-   **Important:** Do not push to remote repositories without explicit user consent. Always ask before running `git push`.
+
+**🛑 EMERGENCY BYPASS PROTOCOL (EXTREMELY RESTRICTED):**
+
+**⚠️ CRITICAL**: `--no-verify` is **FORBIDDEN** except in these **EXACT** scenarios:
+
+✅ **ONLY ACCEPTABLE CASES:**
+1. **Pre-commit hook configuration is broken** (not code quality failures)
+2. **CI/CD pipeline configuration issues** (not code issues)
+3. **Development tool installation failures** (not code violations)
+
+❌ **ABSOLUTELY FORBIDDEN BYPASSES:**
+- Code quality failures (ruff, mypy, pytest)
+- Test failures or coverage drops
+- Architecture violations or import errors
+- "I'll fix it later" mentality
+- Time pressure or deadlines
+- "Small changes that don't matter"
+
+**🔒 MANDATORY BYPASS JUSTIFICATION PROTOCOL:**
+```bash
+# Step 1: PROVE it's a tool issue, not code issue
+python scripts/staged-check.py  # Must show tool failure, not code failure
+
+# Step 2: Document the EXACT tool issue
+git commit --no-verify -m "fix: bypass due to [SPECIFIC TOOL ISSUE]
+
+JUSTIFICATION: Pre-commit hook [HOOK_NAME] has configuration error [ERROR_DETAILS]
+CODE STATUS: All quality checks pass manually via scripts/staged-check.py
+IMMEDIATE FOLLOW-UP: Will fix hook configuration in next commit"
+
+# Step 3: IMMEDIATELY fix the tool issue (within 1 hour)
+# No additional development work until bypass is resolved
+```
+
+**🚨 BYPASS AUDIT TRAIL:**
+- Every `--no-verify` usage must be documented with specific technical justification
+- Follow-up fix must be committed within 1 hour
+- Team review required for any bypass usage
+- More than 1 bypass per month triggers mandatory process review
+
+### Step 1.6.5: Active Change Tracking Registry
+
+**Maintain systematic tracking of all development work in progress:**
+
+**Development Registry Template** (update `dev-todo.md` or create tracking file):
+```markdown
+## Active Development Registry
+
+| Task ID | Developer | Branch | Status | Files Changed | Dependencies | Est. Completion |
+|---------|-----------|--------|--------|---------------|--------------|-----------------|
+| TASK-001| AI-Dev    | feat/new-api | in_progress | src/api/client.py | None | 2024-01-15 |
+| TASK-002| Human     | fix/bug-123  | testing     | src/core/orders.py | TASK-001 | 2024-01-16 |
+
+## Status Indicators:
+- **planning**: Requirements gathering and design
+- **in_progress**: Active development
+- **testing**: Quality pipeline running
+- **review**: Awaiting PR approval
+- **completed**: Merged to main
+- **blocked**: Waiting on dependencies
+```
+
+**Registry Update Protocol:**
+- **Start of task**: Add entry with status `planning`
+- **After Step 1.4.5**: Update to `in_progress` with files changed
+- **After Step 1.6**: Update to `testing` with commit hash
+- **After merge**: Update to `completed` with PR number
+
+**Why This Matters**: Prevents development conflicts and provides the systematic tracking that made trading workflow successful.
+
+---
+
+## 2. Code Review and Merge
+
+### Step 2.1: Open a Pull Request
+
+-   **Before pushing:** Confirm with the user before pushing your branch to GitHub.
+-   Push your branch to GitHub and open a Pull Request against the `main` branch.
+-   **Use the provided Pull Request template** to describe your changes, link to the relevant `dev-todo.md` task, and explain how to test them.
+
+### Step 2.2: Pass CI Checks and Get Approval
+
+-   The project's CI pipeline will automatically run all quality checks again.
+-   All checks must pass, and at least one team member must approve the PR before it can be merged.
+
+---
+
+## 3. Post-Merge Housekeeping
+
+-   After your PR is merged, update the `dev-todo.md` to mark your task as complete.
+-   If your work introduced the need for follow-up tasks, add them to the to-do list.
+-   Document any architectural changes or new patterns in appropriate docs.
+
+---
+
+## 4. Development Tooling Reference
+
+### Automated Setup and Common Commands
+
+```bash
+# Complete environment setup
+python scripts/setup-dev.py        # One-time setup
+make setup                          # Alternative using Make
+
+# Daily development workflow
+make fix                            # Auto-fix formatting/linting
+make test                           # Run tests
+make check                          # Full quality pipeline
+make clean                          # Clean build artifacts
+
+# Advanced usage
+python scripts/staged-check.py --help       # See all options
+python scripts/dev.py test-fast             # Fast test run
+python scripts/dev.py cov                   # Coverage report
+```
+
+### Tool-Specific Recovery Patterns
+
+**Common failure patterns and their solutions:**
+
+| Issue | Symptoms | Solution |
+|-------|----------|----------|
+| Environment | Import errors, missing tools | `python scripts/setup-dev.py` |
+| Virtual env | Wrong Python, pip launcher errors | `deactivate; rm -rf venv; python scripts/setup-dev.py` |
+| Dependencies | Module not found | `make install` or `pip install -e ".[dev,test]"` |
+| Formatting | Ruff/formatting failures | `make fix` or add `--fix` flag |
+| Type errors | MyPy failures | Check `CONVENTIONS.md` for TypedDict patterns |
+| Test failures | Pytest errors | `pytest tests/file.py::test_name -v --tb=short` |
+| Coverage | Insufficient coverage | Follow Step 1.4.1 guidance |
+
+### Incremental Development Workflow
+
+For large changes, use incremental quality checks:
+
+```bash
+# 1. Start with environment verification
+python scripts/staged-check.py --stage env
+
+# 2. Write code, then check formatting incrementally
+python scripts/staged-check.py --stage format --fix
+
+# 3. Add types, verify type safety
+python scripts/staged-check.py --stage types
+
+# 4. Write tests, verify coverage last
+python scripts/staged-check.py --stage tests
+```
+
+---
+
+## Appendix: Managing Dependencies
+
+-   To add a new production dependency, add it to the `dependencies` list in `pyproject.toml`.
+-   To add a new development or test dependency, add it to the appropriate list under `[project.optional-dependencies]`.
+-   After updating `pyproject.toml`, run `make install` or `pip install -e ".[dev,test]"` to update your environment.
+
+---
+
+## 🧠 **META-THINKING & CONTINUOUS DEVELOPMENT IMPROVEMENT**
+
+### **Meta-Analysis Protocol for Development**
+**ALWAYS think beyond the immediate development task. When any issue occurs during development, investigate the underlying cause and propose development workflow improvements.**
+
+### **🤖 AI-ENHANCED DEVELOPMENT WORKFLOWS (CRITICAL)**
+
+**⚠️ MANDATORY**: All AI-related development must integrate with established trading workflows and follow AI prompt engineering standards.
+
+#### **🔄 WORKFLOW INTEGRATION REQUIREMENTS**
+
+**The system has two primary AI-enhanced workflows that MUST be integrated properly:**
+
+| Workflow | Purpose | AI Model | Integration Point |
+|----------|---------|----------|-------------------|
+| **crypto-workflow.md** | Strategic development & execution | sonar-deep-research | Enhanced context provision |
+| **crypto-monitoring-workflow.md** | Daily monitoring & health checks | sonar | Quick status assessment |
+
+**Mandatory Integration Checklist:**
+- [ ] All AI service modifications maintain compatibility with both workflows
+- [ ] Enhanced context generation follows established patterns
+- [ ] Protection assessment is automated and integrated
+- [ ] Terminal troubleshooting includes workflow-specific recovery
+- [ ] Meta-analysis includes workflow effectiveness metrics
+
+#### **🎯 AI PROMPT ENGINEERING STANDARDS (CRITICAL)**
+
+**Based on real execution analysis, AI prompts MUST include comprehensive context to prevent suboptimal recommendations:**
+
+**Required Context Categories:**
+1. **Protection Coverage Analysis** - Automated scoring of existing order protection
+2. **Effective Balance Analysis** - Available vs committed balance breakdown
+3. **Risk Management Context** - User preferences, strategy phase, position sizing rules
+4. **Technical Market Context** - Current indicators, price levels, momentum analysis
+5. **Strategic Context** - Current market regime, recent trading activity, plan synchronization
+
+**Implementation Pattern:**
+```python
+# REQUIRED: Enhanced context generation for AI services
+def generate_ai_context(portfolio_data, market_data, order_data):
+    """Generate comprehensive context for AI analysis."""
+    return {
+        'protection_analysis': generate_protection_coverage_analysis(...),
+        'balance_analysis': generate_effective_balance_analysis(...),
+        'risk_context': generate_risk_context(...),
+        'portfolio_data': portfolio_data,
+        'market_data': market_data,
+        'order_data': order_data
+    }
+```
+
+**Anti-Patterns to Prevent:**
+- ❌ **Protection Assessment Blindness**: AI recommending protection when adequate protection exists
+- ❌ **Balance Confusion**: AI flagging "insufficient balance" when balance is committed to protection
+- ❌ **Context Sparsity**: Sending minimal context leading to generic recommendations
+- ❌ **Strategy Misalignment**: AI recommendations conflicting with current strategy phase
+
+#### **🛡️ PROTECTION ASSESSMENT PATTERNS (CRITICAL SAFETY)**
+
+**Based on real execution failure analysis, protection assessment is the #1 priority for preventing redundant orders:**
+
+**Mandatory Protection Assessment Protocol:**
+```python
+# STEP 1: Calculate protection coverage score (0-100)
+def calculate_protection_score(symbol, current_price, existing_orders):
+    score = 0
+    # Proximity bonus: Closer protective orders = higher score
+    # Coverage bonus: Higher % of position protected = higher score
+    # Multiple levels bonus: Diversified protection = higher score
+    return score
+
+# STEP 2: Decision matrix based on score
+def get_protection_recommendation(score):
+    if score >= 90: return "EXCELLENT - Skip protection recommendations"
+    elif score >= 70: return "GOOD - Minor adjustments only"
+    elif score >= 50: return "MODERATE - Evaluate improvements"
+    else: return "POOR - Implement protection immediately"
+```
+
+**Real-World Example Integration:**
+```
+Input: AI recommends SOL stop-loss (RSI 74.5)
+Protection Analysis: SOL has 95/100 score (5.0 SOL sell at $185, current $183.83)
+Decision: SKIP recommendation - excellent protection already exists
+Result: Prevents redundant OCO order that would conflict with existing protection
+```
+
+#### **🔧 TERMINAL TROUBLESHOOTING INTEGRATION (CRITICAL)**
+
+**Based on real execution experience, git bash terminal issues are common and disruptive:**
+
+**Mandatory Terminal Recovery Patterns:**
+```bash
+# Pattern 1: Clipboard paste failures ([200~python command not found)
+# Solution: Type commands manually, restart terminal if needed
+
+# Pattern 2: Commands appearing to hang
+# Solution: Ctrl+C, then verify if command actually succeeded before retrying
+
+# Pattern 3: Escape sequences in terminal
+# Solution: Restart terminal, continue with manual typing
+```
+
+**Integration with Development Workflow:**
+- All development work MUST include terminal recovery documentation
+- Workflow execution MUST include verification steps after terminal issues
+- All commands MUST have alternative execution methods documented
+
+#### **⚖️ AUTOMATION DECISION FRAMEWORK (CRITICAL)**
+
+**Based on systematic analysis of what should be automated vs manual:**
+
+| Component | Automate | Keep Manual | Reasoning |
+|-----------|----------|-------------|-----------|
+| **Protection Analysis** | ✅ Scoring & detection | ❌ Strategic decisions | Eliminate busy work, preserve control |
+| **Balance Analysis** | ✅ Available vs committed | ❌ Deployment decisions | Prevent errors, maintain oversight |
+| **Order Simulation** | ✅ Conflict detection | ❌ Order execution | Catch errors, preserve safety |
+| **Context Generation** | ✅ Data gathering | ❌ Context interpretation | Improve accuracy, maintain judgment |
+| **Plan Documentation** | ❌ | ✅ Human verification | Ensure awareness, prevent assumptions |
+
+**Implementation Checklist:**
+- [ ] Automated components have comprehensive error handling
+- [ ] Manual components have clear decision criteria
+- [ ] Automation includes conflict detection and prevention
+- [ ] Manual controls include verification and approval steps
+
+### **📊 ENHANCED META-ANALYSIS PROTOCOLS (MANDATORY)**
+
+**Building on basic meta-analysis, include systematic execution issue analysis:**
+
+#### **🔍 EXECUTION ISSUE CLASSIFICATION (MANDATORY)**
+
+**When ANY development or execution issue occurs, classify systematically:**
+
+**Level 1: Technical Execution Issues (Fix + Automate Prevention)**
+- API integration failures → Investigate service design patterns
+- Terminal/command execution problems → Document recovery procedures
+- Tool configuration drift → Implement automated validation
+- Environment inconsistencies → Enhance setup automation
+
+**Level 2: Process & Workflow Issues (Enhance + Document)**
+- Protection assessment failures → Integrate automated scoring
+- Context provision gaps → Enhance AI prompt engineering
+- Manual step repetition → Identify automation opportunities
+- Decision bottlenecks → Streamline approval processes
+
+**Level 3: Strategic & Framework Issues (Evolve + Integrate)**
+- AI recommendation quality → Enhance context and validation
+- Workflow effectiveness → Integrate real execution feedback
+- System architecture limitations → Plan comprehensive improvements
+- User experience friction → Design better interaction patterns
+
+**Auto-Improvement Questions for AI Development:**
+1. **Context Quality**: Did the AI have sufficient context to make good recommendations?
+2. **Protection Awareness**: Did the AI understand existing protection adequacy?
+3. **Balance Understanding**: Did the AI correctly interpret available vs committed funds?
+4. **Strategic Alignment**: Did the AI recommendations align with current strategy phase?
+5. **Execution Integration**: Can this AI improvement be integrated into existing workflows?
+6. **Automation Potential**: Can this decision/analysis be automated while preserving control?
+
+#### **🎯 AI SERVICE INTEGRATION SUCCESS METRICS (MANDATORY)**
+
+**Track these metrics to ensure AI enhancements improve rather than complicate workflows:**
+
+**Context Quality Metrics:**
+- Protection assessment accuracy: >95% correct existing protection evaluation
+- Balance analysis accuracy: >98% correct available fund calculation
+- Strategy alignment: >90% recommendations align with current strategy phase
+- Technical validity: >95% recommendations technically feasible
+
+**Workflow Integration Metrics:**
+- Execution efficiency: <5 minutes from analysis to first action
+- Decision quality: >90% of recommendations accepted by human oversight
+- Error prevention: >95% reduction in order conflicts and precision errors
+- Process reliability: >98% successful workflow completion rate
+
+**Automation Effectiveness Metrics:**
+- Manual effort reduction: >70% reduction in busy work tasks
+- Decision control preservation: 100% of critical decisions remain under human control
+- Error detection: >95% of potential issues caught before execution
+- Recovery speed: <2 minutes average time to recover from any automation failure
+
+#### **🔄 CONTINUOUS WORKFLOW EVOLUTION (MANDATORY)**
+
+**Based on real execution experience, workflows must evolve systematically:**
+
+**Weekly Workflow Health Check:**
+```bash
+# Automated metrics collection
+python scripts/analyze-workflow-effectiveness.py
+
+# Manual assessment questions:
+# 1. Did protection assessment prevent any redundant orders this week?
+# 2. Did enhanced AI context improve recommendation quality?
+# 3. Were there any terminal/execution issues that disrupted workflows?
+# 4. Did automation reduce manual effort without reducing control?
+# 5. Were there any AI recommendations that conflicted with strategy?
+```
+
+**Monthly AI Enhancement Review:**
+- Review AI prompt effectiveness and context quality
+- Analyze protection assessment accuracy and prevention success
+- Evaluate automation vs manual control balance
+- Assess workflow integration smooth operation
+- Plan next iteration of improvements based on real execution data
+
+**Quarterly Strategic Integration Assessment:**
+- Evaluate overall AI-enhanced workflow effectiveness
+- Plan architectural improvements based on execution patterns
+- Review and update AI prompt engineering standards
+- Assess need for new automation opportunities
+- Document lessons learned and pattern updates
+
+### **🏗️ ARCHITECTURAL INTEGRITY MAINTENANCE (CRITICAL)**
+
+**⚠️ MANDATORY**: Every development session MUST include architectural integrity verification to prevent system degradation.
+
+#### **🔍 Architecture Validation Checklist**
+
+**Before ANY code changes, verify these architectural foundations:**
+
+```bash
+# STEP 1: MANDATORY AUTOFIX SEQUENCE (run this first always)
+venv/Scripts/ruff.exe format .                      # Auto-format
+venv/Scripts/ruff.exe check . --fix --unsafe-fixes  # Fix all auto-fixable
+venv/Scripts/ruff.exe check . --output-format=concise | head -20  # Review remaining
+
+# STEP 2: ARCHITECTURAL PATTERN VERIFICATION (only after autofix)
+python scripts/validate-architecture.py
+
+# STEP 3: ENVIRONMENT INTEGRITY (verify setup)
+python scripts/staged-check.py --stage env
+```
+
+**🎯 Focus Areas After Autofix:**
+- Only 15% of issues remain after autofix sequence
+- Focus manual effort on architecture-specific patterns
+- Address E402 and B904 patterns per the Manual Issue Resolution Guide
+- Validate import patterns match architectural requirements
+
+**⚠️ If architectural validation fails after autofix:**
+1. **First check**: Are you using correct import patterns for file location?
+2. **Then check**: Does the environment stage pass?
+3. **Finally**: Run the full architectural validation script for detailed analysis
+
+#### **🛡️ Architectural Anti-Patterns Prevention**
+
+**NEVER allow these degradations:**
+
+| Anti-Pattern | Detection | Prevention |
+|-------------|-----------|------------|
+| **Mixed Import Styles** | `grep -r "from src\." src/` | Use architecture validation script |
+| **Circular Dependencies** | `python -m pydeps src --show-cycles` | Module dependency review |
+| **Path Manipulation Drift** | Check `sys.path` modifications | Centralize in `main.py` and `conftest.py` only |
+| **Tool Command Drift** | Quality pipeline failures | Use `scripts/staged-check.py` consistently |
+| **Config Pattern Inconsistency** | Multiple config loading patterns | Standardize on `importlib.resources` |
+
+#### **🔄 Architecture Evolution Protocol**
+
+**When architectural changes are necessary:**
+
+1. **Document the Change**: Update this section with new patterns
+2. **Migration Script**: Create automated migration for existing code
+3. **Validation Update**: Extend architecture validation checks
+4. **Team Communication**: Update in `CONVENTIONS.md` and this file
+5. **Rollback Plan**: Ensure changes can be safely reverted
+
+**Example architectural change workflow:**
+```bash
+# 1. Plan the change
+echo "## Architectural Change: [DESCRIPTION]" >> ARCHITECTURE_CHANGES.md
+
+# 2. Create migration script
+cat > scripts/migrate-architecture.py << 'EOF'
+#!/usr/bin/env python3
+"""Migrate codebase to new architectural pattern."""
+# Implementation here
+EOF
+
+# 3. Test migration on branch
+git checkout -b arch/new-pattern
+python scripts/migrate-architecture.py
+python scripts/staged-check.py  # Verify integrity
+
+# 4. Update validation
+# Add new checks to architecture validation script
+
+# 5. Document and merge
+# Update this file and CONVENTIONS.md
+```
+
+#### **🚨 Architecture Drift Detection**
+
+**Automated monitoring for architectural degradation:**
+
+```bash
+# Add to CI/CD pipeline or pre-commit hooks
+#!/bin/bash
+# Architecture integrity check
+
+echo "🔍 Checking architectural integrity..."
+
+# Import pattern validation
+python -c "[IMPORT_PATTERN_CHECK_CODE_FROM_ABOVE]"
+
+# Quality pipeline functionality
+python scripts/staged-check.py --stage env || {
+    echo "❌ Quality pipeline broken"
+    exit 1
+}
+
+# Package installability
+pip install -e . --quiet --dry-run || {
+    echo "❌ Package not installable"
+    exit 1
+}
+
+# Entry point functionality
+python -c "from main import app; print('✅ Main entry point working')"
+
+echo "✅ Architecture integrity verified"
+```
+
+#### **📊 Architecture Health Metrics**
+
+**Track these metrics to prevent degradation:**
+
+- **Import Consistency Score**: % of files following correct import patterns
+- **Test Coverage Maintenance**: Ensure tests mirror src/ structure
+- **Quality Pipeline Success Rate**: % of successful full pipeline runs
+- **Configuration Centralization**: Single source of truth maintenance
+- **Module Coupling Score**: Minimize circular dependencies
+
+**Weekly Architecture Review Questions:**
+1. Are all import patterns still consistent with the documented rules?
+2. Is the quality pipeline detecting issues correctly?
+3. Are new modules following the established package structure?
+4. Is configuration still centralized and consistent?
+5. Are tests maintaining the mirror structure of src/?
+
+#### **Development Issue Classification & Root Cause Analysis**
+When encountering development problems, categorize and analyze:
+
+**Level 1: Technical Issues (Fix + Prevent)**
+- API errors → Investigate underlying API design or infrastructure issues
+- Build/test failures → Analyze tooling configuration and environment setup
+- Merge conflicts → Examine branch management and coordination problems
+- Performance issues → Review code architecture and optimization opportunities
+
+**Level 2: Process Issues (Workflow Enhancement)**
+- Repeated quality check failures → Improve automated validation
+- Manual step repetition → Identify automation opportunities
+- Communication breakdowns → Enhance documentation and protocols
+- Scope creep → Refine task planning and breakdown methods
+
+**Level 3: Strategic Issues (Framework Evolution)**
+- Architecture limitations → Evaluate system design patterns
+- Scalability concerns → Plan architectural improvements
+- Technology debt → Prioritize refactoring initiatives
+- Tool inadequacies → Research and propose better development tools
+
+**Auto-Improvement Questions for Development:**
+1. **Root Cause**: What underlying factor caused this development issue?
+2. **Pattern Recognition**: Have we encountered this type of issue before?
+3. **Prevention**: How can we prevent this category of issues in the future?
+4. **Automation**: Can this development task or check be automated?
+5. **Tooling**: Are our development tools adequate for this type of work?
+6. **Process**: Does this reveal a gap in our development workflow?
+7. **🏗️ Architecture**: Does this issue indicate architectural drift or weakness?
+
+## 🔄 **META-REVIEW: PROCESS AUTOMATION ANALYSIS**
+
+### **🎯 AUTOFIX EFFECTIVENESS ANALYSIS**
+
+**Based on comprehensive process review, ruff autofix handles ~85% of common issues automatically:**
+
+#### **✅ FULLY AUTOMATED (No Manual Intervention)**
+```bash
+# These are 100% automated via ruff --fix --unsafe-fixes
+- Code formatting (spacing, line length, indentation)
+- Import sorting and organization
+- Trailing whitespace removal
+- Unused variable removal
+- List/set comprehension optimization
+- String quote normalization
+- Comma placement and spacing
+```
+
+#### **⚠️ SEMI-AUTOMATED (Requires Project-Specific Logic)**
+```bash
+# These need architectural awareness but patterns can be automated
+- E402 (Module imports after sys.path modification) → Architectural pattern
+- Import pattern consistency → src/ modules vs main.py patterns
+- Relative vs absolute import decisions → Package structure awareness
+```
+
+#### **❌ MANUAL ONLY (Requires Human Decision)**
+```bash
+# These require business logic understanding
+- B904 Exception chaining → Context-dependent: 'from err' vs 'from None'
+- Complex refactoring → API changes, method signatures
+- Architecture violations → Design decisions
+- Test coverage gaps → Domain knowledge required
+```
+
+### **🚀 OPTIMIZED AUTOMATION WORKFLOW**
+
+**Recommended 3-stage process for maximum automation:**
+
+#### **Stage 1: Full Automation (30 seconds)**
+```bash
+# Run this first - fixes 85% of issues automatically
+venv/Scripts/ruff.exe format .                      # Format code
+venv/Scripts/ruff.exe check . --fix --unsafe-fixes  # Fix all auto-fixable
+venv/Scripts/ruff.exe check . --output-format=concise | head -20  # Show remaining
+```
+
+#### **Stage 2: Pattern-Based Fixes (2-5 minutes)**
+```bash
+# Automate common architectural patterns found in this project:
+
+# Fix E402 in main.py (imports after sys.path setup)
+# → These are intentional due to src layout pattern
+# → Add # noqa: E402 comment if architectural necessity
+
+# Fix import patterns in src/ modules
+# → Always use relative imports within src/
+# → Use absolute imports in main.py and tests/
+```
+
+#### **Stage 3: Manual Review (5-10 minutes)**
+```bash
+# Focus manual effort on remaining issues:
+# - B904 exception handling (context-dependent)
+# - New architecture violations (design decisions)
+# - Test coverage below 85% (domain-specific)
+```
+
+### **📊 PROCESS EFFICIENCY METRICS**
+
+**Before Automation Improvements:**
+- Manual effort: 20-30 minutes per fix session
+- Error-prone: Human inconsistency in formatting
+- Coverage: 60-80% of common issues addressed
+
+**After Automation Improvements:**
+- Manual effort: 5-10 minutes per fix session
+- Consistent: Machine-enforced standards
+- Coverage: 85-90% of issues automated
+
+### **🛠️ AUTOMATION INTEGRATION POINTS**
+
+#### **IDE Integration (Cursor/VS Code)**
+```json
+// .vscode/settings.json additions
+{
+  "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+  "ruff.format.enable": true,
+  "ruff.lint.enable": true,
+  "ruff.organizeImports": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": true
+  }
+}
+```
+
+#### **Git Hooks (Pre-commit)**
+```bash
+# .pre-commit-config.yaml optimized for autofix
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix, --unsafe-fixes]
+      - id: ruff-format
+```
+
+#### **Development Scripts Integration**
+```bash
+# Make commands that leverage autofix
+make fix          # ruff format . && ruff check . --fix --unsafe-fixes
+make check        # Full pipeline including manual-required items
+make quick-fix    # Just the automated fixes for rapid iteration
+```
+
+### **🎯 SPECIFIC AUTOFIX RECOMMENDATIONS FOR THIS PROJECT**
+
+#### **Architecture-Aware Patterns**
+```python
+# Pattern: src/ module imports (AUTOMATED)
+# Before: from api.client import BinanceClient
+# After:  from .api.client import BinanceClient
+
+# Pattern: main.py imports (DOCUMENT AS ACCEPTABLE)
+# E402 after sys.path.insert() is architectural necessity
+# Add: # noqa: E402  # Required for src layout
+```
+
+#### **Exception Handling Patterns**
+```python
+# Pattern: User-facing errors (MANUAL - context dependent)
+# Use: raise typer.Exit(code=1) from None  # Hide implementation details
+# Use: raise APIError() from err           # Preserve debugging info
+```
+
+#### **Quality Gate Integration**
+```bash
+# Autofix-first quality gates
+python scripts/staged-check.py --stage format --fix  # Auto-fix everything possible
+python scripts/staged-check.py --stage types         # Type check (no autofix)
+python scripts/staged-check.py --stage tests         # Test/coverage (manual)
+```
+
+**RESULT: ~85% automation of quality issues, 70% reduction in manual fix time**
+
+---
+
+## 📝 **FINAL SUMMARY: QUALITY-AS-ERRORS PHILOSOPHY**
+
+### **🎯 CORE PRINCIPLE**
+**ALL code quality issues are BLOCKING ERRORS, not warnings or suggestions.**
+
+### **🚨 NON-NEGOTIABLE REQUIREMENTS**
+1. **Zero tolerance** for quality violations
+2. **Immediate response** to any quality failure
+3. **Autofix first**, manual fix second
+4. **Block commits** with quality issues
+5. **Revert immediately** if quality pipeline breaks
+6. **NO bypassing** pre-commit hooks for code quality issues
+7. **Mandatory justification** for any `--no-verify` usage
+8. **Immediate follow-up** required for any bypass within 1 hour
+
+### **✅ DEVELOPMENT SUCCESS INDICATORS**
+- All quality checks pass ✅
+- Clean `git status` ✅
+- Entry points working ✅
+- Zero architecture violations ✅
+
+### **🎖️ QUALITY CHAMPION MINDSET**
+- Quality is not optional—it's the foundation of reliable software
+- Every shortcut in quality creates technical debt that costs 10x later
+- Automation handles routine quality—humans focus on architecture and logic
+- Consistent quality compliance builds trust and maintainable systems
+
+**Remember: Quality issues are not "nice to fix later"—they are blocking errors that prevent forward progress until resolved.**
+
+**⚠️ FINAL WARNING ON BYPASSES: Pre-commit hooks exist for a reason. Bypassing them for code quality issues is not "efficient development"—it's technical debt creation that costs the entire team. Every shortcut today becomes tomorrow's emergency. Honor the quality standards, and the codebase will serve you well.**
+
+---
+
+## 🚨 **CRITICAL: NO REAL API CALLS IN TESTS (BLOCKING ERROR)**
+
+**⚠️ ABSOLUTE REQUIREMENT**: Tests MUST NEVER call real APIs (Binance, Perplexity, or any external service). Real API calls in tests are treated as BLOCKING ERRORS equivalent to syntax errors.
+
+### **🔴 ZERO-TOLERANCE API ISOLATION POLICY**
+
+**NEVER allow tests to make real network calls:**
+
+| Real API Call Risk | Detection | Prevention |
+|---|----|----|
+| **Binance API Calls** | Tests failing without internet/keys | Mock `BinanceClient` and `requests.Session` |
+| **Perplexity API Calls** | Tests making HTTP requests | Mock `requests.post` in `perplexity_service` |
+| **Network Dependencies** | Tests requiring external services | Use `@patch` decorators and `Mock` objects |
+
+#### **🤖 AI SERVICE TESTING PATTERNS (CRITICAL)**
+
+**Based on enhanced AI integration, additional testing patterns are MANDATORY:**
+
+**Enhanced Context Testing:**
+```python
+# REQUIRED: Test enhanced context generation
+def test_generate_protection_coverage_analysis():
+    """Test protection analysis context generation."""
+    portfolio_data = "SOL: $1,912.36 (28.8%)"
+    result = generate_protection_coverage_analysis(mock_account, mock_orders, portfolio_data)
+
+    assert "Protection Score" in result
+    assert "Assessment:" in result
+    # Verify protection scoring logic accuracy
+
+# REQUIRED: Test balance analysis context
+def test_generate_effective_balance_analysis():
+    """Test effective balance context generation."""
+    result = generate_effective_balance_analysis(mock_account, mock_orders)
+
+    assert "available" in result.lower()
+    assert "committed" in result.lower()
+    # Verify balance interpretation guidance
+```
+
+**AI Prompt Context Testing:**
+```python
+# REQUIRED: Test complete AI context integration
+def test_ai_context_integration(mock_perplexity_service):
+    """Test that AI service receives enhanced context."""
+    mock_perplexity_service.generate_portfolio_analysis.return_value = "test analysis"
+
+    # Call with enhanced context
+    result = call_ai_analysis_with_context()
+
+    # Verify enhanced context was passed
+    call_args = mock_perplexity_service.generate_portfolio_analysis.call_args
+    assert call_args[1]['protection_analysis'] is not None
+    assert call_args[1]['balance_analysis'] is not None
+    assert call_args[1]['risk_context'] is not None
+```
+
+**Protection Assessment Testing:**
+```python
+# REQUIRED: Test protection scoring accuracy
+@pytest.mark.parametrize("sell_orders,current_price,expected_score", [
+    ([{"price": 185, "quantity": 5.0}], 183.83, 95),  # Excellent protection
+    ([{"price": 200, "quantity": 5.0}], 183.83, 70),  # Good protection
+    ([], 183.83, 0),  # No protection
+])
+def test_protection_score_calculation(sell_orders, current_price, expected_score):
+    """Test protection scoring logic with realistic scenarios."""
+    score = calculate_protection_score("SOL", current_price, sell_orders)
+    assert abs(score - expected_score) <= 5  # Allow small variance
+```
+
+**Context Enhancement Validation:**
+```python
+# REQUIRED: Validate context prevents known AI failures
+def test_context_prevents_protection_blindness():
+    """Test that enhanced context prevents redundant protection recommendations."""
+    # Simulate scenario that previously caused AI to recommend redundant protection
+    existing_protection = generate_protection_coverage_analysis(...)
+    ai_prompt = generate_enhanced_prompt(..., protection_analysis=existing_protection)
+
+    # Verify prompt includes protection assessment guidance
+    assert "Skip protection recommendations" in ai_prompt
+    assert "95/100 Protection Score" in ai_prompt
+
+def test_context_prevents_balance_confusion():
+    """Test that enhanced context explains committed vs available balance."""
+    balance_analysis = generate_effective_balance_analysis(...)
+
+    # Verify balance context explains why low availability may be good
+    assert "committed to sell orders - GOOD for protection" in balance_analysis
+    assert "Use only 'available' amounts" in balance_analysis
+```
+| **Rate Limiting** | Tests hitting API rate limits | Complete isolation from external APIs |
+| **Cost Accumulation** | Tests generating API usage costs | Mock all external service calls |
+
+### **✅ MANDATORY MOCKING PATTERNS**
+
+**Use these established patterns for API isolation:**
+
+#### **Binance API Mocking Pattern:**
+```python
+# Pattern 1: Mock the entire BinanceClient class
+@pytest.fixture
+def mock_binance_client(mocker: MockerFixture) -> MagicMock:
+    """Fixture to mock the BinanceClient."""
+    return cast(MagicMock, mocker.patch("main.BinanceClient"))
+
+# Pattern 2: Mock requests.Session for client tests
+@patch("requests.Session")
+def test_binance_api_call(mock_session: MagicMock) -> None:
+    client = BinanceClient()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"symbol": "BTCUSDT"}
+    mock_session.return_value.request.return_value = mock_response
+
+    result = client.get_symbol_info("BTCUSDT")
+    assert result["symbol"] == "BTCUSDT"
+    mock_session.return_value.request.assert_called_once()
+```
+
+#### **Perplexity API Mocking Pattern:**
+```python
+# Pattern 1: Mock the service class for integration tests
+@pytest.fixture
+def mock_perplexity_service(mocker: MockerFixture) -> MagicMock:
+    """Fixture to mock the PerplexityService."""
+    return cast(MagicMock, mocker.patch("main.PerplexityService"))
+
+# Pattern 2: Mock requests.post for service tests
+@patch("src.core.perplexity_service.requests.post")
+def test_perplexity_api_call(mock_post: Mock, perplexity_service: PerplexityService) -> None:
+    mock_response = Mock()
+    mock_response.json.return_value = {"choices": [{"message": {"content": "response"}}]}
+    mock_response.raise_for_status.return_value = None
+    mock_post.return_value = mock_response
+
+    result = perplexity_service.call_api([{"role": "user", "content": "test"}])
+    assert result["choices"][0]["message"]["content"] == "response"
+    mock_post.assert_called_once()
+```
+
+#### **Environment Variable Mocking:**
+```python
+# MANDATORY: Mock API keys in conftest.py
+@pytest.fixture(autouse=True)
+def mock_env(monkeypatch: MonkeyPatch) -> None:
+    """Mocks environment variables for tests."""
+    monkeypatch.setenv("BINANCE_API_KEY", "test_api_key")
+    monkeypatch.setenv("BINANCE_API_SECRET", "test_api_secret")
+    monkeypatch.setenv("PERPLEXITY_API_KEY", "test_perplexity_key")
+```
+
+### **🔍 API ISOLATION VERIFICATION**
+
+**Before ANY test commit, verify complete API isolation:**
+
+```bash
+# MANDATORY checks for API isolation:
+# 1. Search for real API URLs in tests
+grep -r "api\." tests/ --include="*.py" | grep -v "mock" | grep -v "patch"
+
+# 2. Search for requests calls without mocking
+grep -r "requests\." tests/ --include="*.py" | grep -v "@patch" | grep -v "Mock"
+
+# 3. Search for client instantiation without fixtures
+grep -r "BinanceClient()" tests/ --include="*.py" | grep -v "mock_"
+grep -r "PerplexityService()" tests/ --include="*.py" | grep -v "mock_"
+
+# 4. Verify no real network calls during test run
+# Tests should run successfully without internet connection
+pytest tests/ --disable-warnings  # Should pass without network
+```
+
+### **🚨 BLOCKING ERROR CONDITIONS**
+
+**IMMEDIATELY STOP development if ANY test:**
+
+- ❌ Makes actual HTTP requests to Binance API
+- ❌ Makes actual HTTP requests to Perplexity API
+- ❌ Requires real API keys to pass
+- ❌ Fails when run without internet connection
+- ❌ Uses real cryptocurrency prices or account data
+- ❌ Generates any external API costs
+- ❌ Has external service dependencies
+
+### **🛠️ REQUIRED MOCKING INFRASTRUCTURE**
+
+**Every test file MUST follow these patterns:**
+
+```python
+# Required imports for API mocking
+from unittest.mock import MagicMock, Mock, patch
+import pytest
+from pytest_mock import MockerFixture
+
+# Required fixtures for service mocking
+@pytest.fixture
+def mock_client() -> MagicMock:
+    """Mock BinanceClient for isolated testing."""
+    return MagicMock()
+
+@pytest.fixture
+def service_under_test(mock_client: MagicMock) -> ServiceClass:
+    """Service instance with mocked dependencies."""
+    return ServiceClass(mock_client)
+```
+
+### **🔄 TEST ISOLATION BEST PRACTICES**
+
+**Design tests for complete independence:**
+
+1. **Mock External Dependencies**: Every API call, file system access, network request
+2. **Use Test Fixtures**: Provide realistic but fake data for all tests
+3. **Verify Mock Calls**: Assert that mocks were called with expected parameters
+4. **Test Error Conditions**: Mock API failures, timeouts, and edge cases
+5. **Reset State**: Ensure tests don't affect each other
+
+### **⚠️ COMMON API MOCKING MISTAKES TO AVOID**
+
+**❌ DO NOT do these:**
+```python
+# ❌ WRONG: Real client instantiation in tests
+client = BinanceClient()  # Uses real API keys!
+
+# ❌ WRONG: Unmocked network calls
+response = requests.get("https://api.binance.com/...")  # Real API call!
+
+# ❌ WRONG: Conditional mocking
+if not os.getenv("REAL_API_TESTING"):  # Sometimes real, sometimes mock
+    client = MockClient()
+```
+
+**✅ DO these instead:**
+```python
+# ✅ CORRECT: Always use fixtures with mocks
+def test_with_mock_client(mock_client: MagicMock):
+    service = Service(mock_client)
+
+# ✅ CORRECT: Patch external calls
+@patch("module.requests.get")
+def test_api_call(mock_get: Mock):
+    mock_get.return_value.json.return_value = {"test": "data"}
+```
+
+### **📋 API TESTING CHECKLIST**
+
+**Before committing ANY test, verify:**
+
+- [ ] All external API calls are mocked using `@patch` or fixtures
+- [ ] Tests pass without internet connection
+- [ ] Tests pass with invalid/missing API keys
+- [ ] Mock objects return realistic test data
+- [ ] Error conditions (timeouts, failures) are tested with mocks
+- [ ] No real API costs can be generated by running tests
+- [ ] Tests are deterministic (same result every run)
+- [ ] All network dependencies are eliminated
+
+**🎯 SUCCESS CRITERIA FOR API TESTING:**
+- Zero real API calls during test execution
+- Tests run successfully in isolated environment
+- Complete coverage of API error scenarios through mocking
+- Fast test execution (no network delays)
+- Deterministic and repeatable test results
+
+---
+
+## 🚨 **CRITICAL: TEST PERFORMANCE MONITORING (BLOCKING ERROR)**
+
+**⚠️ ABSOLUTE REQUIREMENT**: Tests MUST run efficiently. Slow tests (>1.0 second) are treated as BLOCKING ERRORS that must be investigated and optimized.
+
+### **🐌 AUTOMATIC SLOW TEST DETECTION**
+
+**Pytest is configured to automatically report slow tests:**
+- `--durations=10` shows the 10 slowest tests after each run
+- `--durations-min=1.0` only reports tests taking ≥1.0 second
+- Slow tests indicate either real API calls or inefficient test setup
+
+### **🔍 SLOW TEST INVESTIGATION PROTOCOL**
+
+**When pytest reports slow tests (>1.0s), IMMEDIATELY investigate:**
+
+| Slow Test Pattern | Likely Cause | Solution |
+|---|----|----|
+| **Integration tests >5s** | Real API calls or heavy imports | ✅ Mock services, optimize imports |
+| **Unit tests >1s** | Missing mocks, real I/O operations | ✅ Add proper @patch decorators |
+| **CLI tests >3s** | Full app import + real services | ✅ Mock BinanceClient, PerplexityService |
+| **Any test >10s** | Network calls or external dependencies | ❌ BLOCKING - Must fix immediately |
+
+### **🚫 FORBIDDEN SLOW TEST PATTERNS**
+
+**NEVER allow these performance killers:**
+
+```python
+# ❌ FORBIDDEN: Real API calls in tests
+def test_binance_api():
+    client = BinanceClient()  # Real API call!
+    result = client.get_account_info()
+
+# ❌ FORBIDDEN: Heavy imports without isolation
+def test_cli_command():
+    from main import app  # Imports ALL services!
+    result = runner.invoke(app, [...])
+
+# ❌ FORBIDDEN: File I/O without mocking
+def test_config_loading():
+    config = load_config("/real/file/path")  # Real file access!
+```
+
+### **✅ REQUIRED FAST TEST PATTERNS**
+
+**Use these optimized patterns for speed:**
+
+```python
+# ✅ CORRECT: Mocked services for speed
+@pytest.fixture
+def mock_binance_client(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("main.BinanceClient")
+
+# ✅ CORRECT: Fast integration test with mocks
+def test_cli_fast(mock_binance_client: MagicMock):
+    mock_binance_client.return_value.get_account_info.return_value = {...}
+    # Test runs in milliseconds, not seconds
+
+# ✅ CORRECT: Mock file operations
+@patch("builtins.open", mock_open(read_data="test config"))
+def test_config_parsing():
+    result = parse_config()
+```
+
+### **⚡ PERFORMANCE OPTIMIZATION CHECKLIST**
+
+**Before committing ANY test, verify:**
+
+- [ ] All external services are mocked (no real API calls)
+- [ ] File operations use `mock_open()` or fixtures
+- [ ] Network calls are patched with `@patch("requests...")`
+- [ ] Heavy imports are isolated or mocked
+- [ ] Test setup is minimal and focused
+- [ ] No sleep() or time delays in tests
+- [ ] Database/file operations are mocked
+
+### **📊 TEST PERFORMANCE BENCHMARKS**
+
+**Expected performance targets:**
+
+| Test Type | Max Duration | Optimization Method |
+|---|----|----|
+| **Unit Tests** | 0.1s | Pure logic, mocked dependencies |
+| **Service Tests** | 0.5s | Mock external APIs, use fixtures |
+| **Integration Tests** | 2.0s | Mock services, fast CLI runners |
+| **Full Test Suite** | 30s | Parallel execution, optimized setup |
+
+### **🛠️ SLOW TEST DEBUGGING WORKFLOW**
+
+**When pytest shows slow tests:**
+
+```bash
+# 1. Run specific slow test with timing details
+pytest tests/slow_test.py::test_name -v --durations=0 --tb=short
+
+# 2. Profile the test execution
+python -m cProfile -o test_profile.prof -m pytest tests/slow_test.py::test_name
+
+# 3. Check for real API calls
+grep -r "requests\." tests/slow_test.py | grep -v "mock"
+grep -r "BinanceClient()" tests/slow_test.py | grep -v "mock_"
+
+# 4. Verify proper mocking
+pytest tests/slow_test.py::test_name --collect-only  # Check fixtures
+```
+
+### **🚨 PERFORMANCE REGRESSION DETECTION**
+
+**Monitor for performance degradation:**
+
+```bash
+# Baseline performance measurement
+pytest tests/ --durations=10 > performance_baseline.txt
+
+# Compare against baseline (run weekly)
+pytest tests/ --durations=10 > performance_current.txt
+diff performance_baseline.txt performance_current.txt
+
+# Alert if any test >3x slower than baseline
+```
+
+### **⚠️ COMMON PERFORMANCE ANTI-PATTERNS**
+
+**Avoid these slow test patterns:**
+
+- ❌ **Heavy fixtures**: Loading entire application for unit tests
+- ❌ **Real I/O**: File operations, database calls, network requests
+- ❌ **Nested imports**: Importing modules inside test functions
+- ❌ **Unoptimized setup**: Creating real objects instead of mocks
+- ❌ **External dependencies**: Any dependency outside the test process
+
+### **✅ FAST TEST SUCCESS CRITERIA**
+
+**Tests are properly optimized when:**
+- Unit tests complete in <0.1s each
+- Integration tests complete in <2.0s each
+- Full test suite runs in <30s
+- No tests appear in `--durations` output (all <1.0s)
+- Tests run consistently fast across different environments
+
+**🎯 PERFORMANCE MONITORING SUCCESS:**
+- Zero tests >1.0s reported by pytest
+- Consistent sub-second execution for 95% of tests
+- No performance regressions between test runs
+- Fast feedback loop for development (test suite <30s)
+
+---
+
+## 🏦 **CRYPTO TRADING DOMAIN KNOWLEDGE**
+
+**⚠️ CRITICAL**: Understanding these business logic patterns is mandatory for development work on order validation, trading operations, and safety mechanisms.
+
+### **🛡️ ORDER VALIDATION ARCHITECTURE (CRITICAL SAFETY SYSTEM)**
+
+**The OrderValidator is the primary safety mechanism preventing catastrophic trading errors:**
+
+#### **🚨 IMMEDIATE FILL PREVENTION (HIGHEST PRIORITY)**
+
+**NEVER allow orders that execute immediately instead of waiting at the desired price:**
+
+| Order Type | Critical Safety Check | Example Catastrophic Error |
+|---|----|----|
+| **BUY LIMIT** | Price MUST be < current price | BUY LIMIT at $2600 when current=$2500 → Instant $100 loss per coin |
+| **SELL LIMIT** | Price MUST be > current price | SELL LIMIT at $2400 when current=$2500 → Instant $100 loss per coin |
+| **OCO SELL** | Limit > current, Stop < current | Wrong sides → Immediate execution instead of protection |
+
+```python
+# CORRECT BUY LIMIT (waits for price to drop)
+buy_limit_price = 2400.0  # Below current 2500.0 ✅
+
+# CATASTROPHIC BUY LIMIT (executes immediately)
+buy_limit_price = 2600.0  # Above current 2500.0 ❌ BLOCKING ERROR
+```
+
+#### **🔄 ORDER TYPE ROUTING PATTERNS**
+
+**Main validation entry point routes by order type:**
+
+```python
+# validate_order_placement() → Routes to specific validators:
+OrderType.OCO → validate_oco_order()       # Two-part orders (limit + stop)
+OrderType.LIMIT → validate_limit_order()   # Single price waiting orders
+OrderType.MARKET → validate_market_order() # Immediate execution orders
+```
+
+#### **⚖️ BALANCE VALIDATION WITH COMMITMENT TRACKING**
+
+**Critical: Account for existing orders when validating new orders:**
+
+```python
+# BUY orders need quote currency (USDT)
+effective_balance = total_balance - committed_to_existing_buy_orders
+
+# SELL orders need base currency (ETH)
+effective_balance = total_balance - committed_to_existing_sell_orders - committed_to_oco_orders
+```
+
+### **🔧 TESTING PATTERNS FOR TRADING LOGIC**
+
+#### **🎯 MOCKING FINANCIAL SERVICES**
+
+**AccountService requires dynamic import mocking due to circular dependency prevention:**
+
+```python
+# CORRECT: Mock the dynamically imported service
+@patch('core.account.AccountService')
+def test_balance_validation(mock_account_service_class):
+    mock_service = Mock()
+    mock_service.get_effective_available_balance.return_value = (balance, commitments)
+    mock_account_service_class.return_value = mock_service
+
+# ❌ WRONG: This will fail due to dynamic import
+@patch('src.core.order_validator.AccountService')  # Module doesn't have this attribute
+```
+
+#### **💰 ASSET EXTRACTION PATTERNS**
+
+**Symbol parsing follows specific cryptocurrency pair conventions:**
+
+```python
+# Asset extraction from trading pairs:
+"ETHUSDT" → base_asset="ETH", quote_asset="USDT"
+"ETHBUSD" → base_asset="ETH", quote_asset="BUSD"
+"ETHBTC"  → base_asset="ETH", quote_asset="BTC"
+
+# Simple extraction logic (remove known quote currencies):
+base_asset = symbol.replace("USDT", "").replace("BUSD", "").replace("BTC", "")
+```
+
+### **📊 EXCHANGE CONSTRAINTS & PRECISION**
+
+#### **📏 LOT_SIZE VALIDATION (QUANTITY PRECISION)**
+
+**All quantities must align with exchange step sizes:**
+
+```python
+# Example: ETHUSDT has stepSize=0.0001 (4 decimal places)
+quantity = 0.5000  # ✅ Aligned (0.5000 / 0.0001 = 5000)
+quantity = 0.5001  # ❌ Not aligned (0.5001 / 0.0001 = 5000.1)
+
+# Floating point precision handling:
+remainder = abs((quantity - min_qty) % step_size)
+is_aligned = remainder <= 1e-8 or abs(remainder - step_size) <= 1e-8
+```
+
+#### **💲 PRICE_FILTER VALIDATION (PRICE PRECISION)**
+
+**All prices must align with exchange tick sizes:**
+
+```python
+# Example: ETHUSDT has tickSize=0.01 (2 decimal places)
+price = 2500.00  # ✅ Aligned
+price = 2500.001 # ❌ Not aligned with 0.01 tick size
+```
+
+#### **📈 PERCENT_PRICE_BY_SIDE (MARKET PROTECTION)**
+
+**Prevents orders too far from current market price:**
+
+```python
+# BUY orders use bidMultiplier values
+max_buy_price = current_price * bidMultiplierUp    # e.g., 2500 * 5 = 12500
+min_buy_price = current_price * bidMultiplierDown  # e.g., 2500 * 0.2 = 500
+
+# SELL orders use askMultiplier values
+max_sell_price = current_price * askMultiplierUp   # Prevents selling too high
+min_sell_price = current_price * askMultiplierDown # Prevents selling too low
+```
+
+#### **💰 NOTIONAL VALIDATION (ORDER SIZE LIMITS)**
+
+**Order value (quantity × price) must meet exchange minimums:**
+
+```python
+# Minimum order value requirement
+notional_value = quantity * price
+# Example: 0.004 ETH × 2500 USD = 10.00 USD (meets 10.00 minimum)
+```
+
+### **🏗️ ARCHITECTURAL SAFETY PATTERNS**
+
+#### **🔄 DYNAMIC IMPORTS (CIRCULAR DEPENDENCY AVOIDANCE)**
+
+**OrderValidator uses late imports to avoid circular dependencies:**
+
+```python
+# Inside _validate_available_balance():
+from core.account import AccountService  # Import only when needed
+account_service = AccountService(self._client)
+```
+
+#### **🎯 OCO ORDER BUSINESS LOGIC**
+
+**OCO (One-Cancels-Other) orders are SELL-side protection mechanisms:**
+
+```python
+# OCO order structure for position protection:
+limit_price > current_price   # Take-profit (sell higher)
+stop_price < current_price    # Stop-loss (sell lower)
+# When one executes, the other cancels automatically
+```
+
+#### **⚡ VALIDATION ERROR CATEGORIES**
+
+**Error types by severity and user action required:**
+
+```python
+# 🚨 CRITICAL: Prevents catastrophic loss
+"CRITICAL: BUY LIMIT would fill IMMEDIATELY" → User must fix price
+
+# ❌ BLOCKING: Exchange will reject
+"Quantity below minimum" → User must increase quantity
+
+# ℹ️ INFORMATIONAL: Helpful guidance
+"SUGGESTED: Use 0.5000 instead of 0.5001" → Auto-fixable precision
+```
+
+### **🧪 DOMAIN-SPECIFIC TEST STRATEGIES**
+
+#### **💸 FINANCIAL ACCURACY TESTING**
+
+**Always test financial calculations with realistic values:**
+
+```python
+# Use realistic crypto prices and quantities
+current_price = 2500.0      # Realistic ETH price
+quantity = 0.5              # Realistic trading amount
+required_usdt = 1250.0      # 0.5 × 2500
+
+# Test precision edge cases common in crypto
+step_size = 0.00001         # Very small steps for some altcoins
+tick_size = 0.000001        # Micro-price increments
+```
+
+#### **🔄 STATE-DEPENDENT VALIDATION TESTING**
+
+**Test validation under different market conditions:**
+
+```python
+# Test OCO orders with various current prices
+current_prices = [2000, 2500, 3000]  # Bear, neutral, bull markets
+# Ensure validation logic adapts correctly to market state
+```
+
+### **📋 TRADING OPERATION CHECKLIST**
+
+**Before implementing any trading-related functionality:**
+
+- [ ] ✅ **Immediate Fill Prevention**: Orders wait at desired price, don't execute immediately
+- [ ] ✅ **Balance Validation**: Account for existing order commitments
+- [ ] ✅ **Exchange Compliance**: All precision requirements met (LOT_SIZE, PRICE_FILTER, etc.)
+- [ ] ✅ **Error Messaging**: Clear, actionable feedback for users
+- [ ] ✅ **Test Coverage**: Comprehensive coverage with realistic financial scenarios
+- [ ] ✅ **API Isolation**: Zero real API calls in tests
+- [ ] ✅ **Performance**: Sub-second validation for responsive trading
+
+**🎯 SUCCESS CRITERIA FOR TRADING FEATURES:**
+- No immediate fill risks (most critical)
+- Exchange constraints properly validated
+- User-friendly error messages with suggested fixes
+- Fast validation for time-sensitive trading decisions
+- Comprehensive test coverage with financial edge cases
+
+---

@@ -2,7 +2,7 @@
 
 import logging
 from decimal import ROUND_DOWN, Decimal
-from typing import Any, Dict, Optional
+from typing import Any
 
 from api.client import BinanceClient
 
@@ -19,7 +19,7 @@ class PrecisionFormatter:
             client: BinanceClient instance for API calls.
         """
         self._client = client
-        self._symbol_cache: Dict[str, Dict[str, Any]] = {}
+        self._symbol_cache: dict[str, dict[str, Any]] = {}
 
     def format_quantity(self, symbol: str, quantity: float) -> float:
         """Format quantity to match LOT_SIZE step size.
@@ -72,7 +72,7 @@ class PrecisionFormatter:
 
         return float(aligned_price)
 
-    def _get_symbol_info(self, symbol: str) -> Dict[str, Any]:
+    def _get_symbol_info(self, symbol: str) -> dict[str, Any]:
         """Get cached symbol information."""
         if symbol not in self._symbol_cache:
             try:
@@ -89,7 +89,7 @@ class PrecisionFormatter:
 
         return self._symbol_cache[symbol]
 
-    def _get_lot_size_step(self, symbol: str) -> Optional[float]:
+    def _get_lot_size_step(self, symbol: str) -> float | None:
         """Get LOT_SIZE step size for symbol."""
         filters = self._get_symbol_info(symbol)
         lot_filter = filters.get("LOT_SIZE")
@@ -105,7 +105,7 @@ class PrecisionFormatter:
             return float(lot_filter["minQty"])
         return 0.0
 
-    def _get_price_tick_size(self, symbol: str) -> Optional[float]:
+    def _get_price_tick_size(self, symbol: str) -> float | None:
         """Get PRICE_FILTER tick size for symbol."""
         filters = self._get_symbol_info(symbol)
         price_filter = filters.get("PRICE_FILTER")

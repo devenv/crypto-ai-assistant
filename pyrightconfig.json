@@ -1,0 +1,85 @@
+{
+  "include": [
+    "src",
+    "main.py"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "venv",
+    ".venv",
+    "build",
+    "dist",
+    "tests"
+  ],
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Windows",
+  "typeCheckingMode": "basic",
+  "strict": [
+    "src/core/order_validator.py",
+    "src/core/orders.py",
+    "src/core/account.py",
+    "src/core/validation_service.py",
+    "src/api/client.py"
+  ],
+  "useLibraryCodeForTypes": true,
+
+  // Critical type safety for financial calculations
+  "reportArgumentType": "error",
+  "reportAssignmentType": "error",
+  "reportReturnType": "error",
+  "reportIncompatibleMethodOverride": "error",
+  "reportUnboundVariable": "error",
+  "reportGeneralTypeIssues": "error",
+
+  // Import and module safety
+  "reportMissingImports": "error",
+  "reportPrivateImportUsage": "error",
+  "reportRedeclaration": "error",
+
+  // Function and class safety
+  "reportIncompatibleVariableOverride": "error",
+  "reportConstantRedefinition": "error",
+  "reportAbstractUsage": "error",
+  "reportCallIssue": "error",
+  "reportAttributeAccessIssue": "error",
+
+  // Optional/None safety (critical for trading)
+  "reportOptionalCall": "error",
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalSubscript": "error",
+  "reportOptionalOperand": "error",
+
+  // ZERO TOLERANCE: Suppress ALL warnings for clean output
+  "reportMissingTypeStubs": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "reportMissingParameterType": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnusedImport": "none",
+  "reportUnusedVariable": "none",
+  "reportUnusedClass": "none",
+  "reportUnusedFunction": "none",
+  "reportUnnecessaryIsInstance": "none",
+  "reportUnnecessaryCast": "none",
+  "reportUnnecessaryComparison": "none",
+  "reportImplicitStringConcatenation": "none",
+  "reportDuplicateImport": "none",
+  "reportUninitializedInstanceVariable": "none",
+  "reportSelfClsParameterName": "none",
+  "reportImplicitOverride": "none",
+
+  "executionEnvironments": [
+    {
+      "root": "src",
+      "pythonVersion": "3.12",
+      "extraPaths": ["src"]
+    },
+    {
+      "root": ".",
+      "pythonVersion": "3.12",
+      "extraPaths": ["src"]
+    }
+  ]
+}

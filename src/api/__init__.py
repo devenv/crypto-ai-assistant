@@ -2,14 +2,21 @@
 This module provides a client for interacting with the Binance API.
 """
 
-from api.enums import CancelOrderType, OrderSide, OrderType, TimeInForce
-from api.exceptions import APIError, BinanceException, InsufficientFundsError, InvalidSymbolError
-from api.models import (
+from .client import BinanceClient
+from .enums import CancelOrderType, OrderSide, OrderType, TimeInForce
+from .exceptions import (
+    APIError,
+    BinanceException,
+    InsufficientFundsError,
+    InvalidSymbolError,
+)
+from .models import (
     AccountInfo,
     Balance,
     ExchangeInfo,
     Fill,
     Kline,
+    OcoOrder,
     Order,
     RateLimit,
     SymbolFilter,
@@ -19,23 +26,29 @@ from api.models import (
 )
 
 __all__ = [
+    # Enums
+    "CancelOrderType",
+    "OrderSide",
+    "OrderType",
+    "TimeInForce",
+    # Exceptions
     "APIError",
     "BinanceException",
     "InsufficientFundsError",
     "InvalidSymbolError",
-    "OrderSide",
-    "OrderType",
-    "TimeInForce",
-    "CancelOrderType",
-    "Kline",
-    "Ticker",
-    "Fill",
-    "Order",
-    "Trade",
-    "Balance",
+    # Models
     "AccountInfo",
+    "Balance",
+    "ExchangeInfo",
+    "Fill",
+    "Kline",
+    "Order",
     "RateLimit",
     "SymbolFilter",
     "SymbolInfo",
-    "ExchangeInfo",
+    "Ticker",
+    "Trade",
+    "OcoOrder",
+    # Client
+    "BinanceClient",
 ]

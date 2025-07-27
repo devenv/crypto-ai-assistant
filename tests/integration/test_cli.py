@@ -9,11 +9,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from main import app
 from pytest_mock import MockerFixture
 from typer.testing import CliRunner
 
-from api.exceptions import BinanceException
+from main import app
+from src.api.exceptions import BinanceException
 
 runner = CliRunner()
 
@@ -64,8 +64,7 @@ def test_account_info_api_error(mock_binance_client: MagicMock, monkeypatch: Mon
 
     result = runner.invoke(app, ["account", "info"])
     assert result.exit_code == 1, result.stdout
-    assert "Binance API Error" in result.stdout
-    assert "API Error" in result.stdout
+    assert "Could not retrieve account balances" in result.stdout
 
 
 def test_get_open_orders_success(mock_binance_client: MagicMock, monkeypatch: MonkeyPatch) -> None:
@@ -126,6 +125,8 @@ def test_get_trade_history_empty(mock_binance_client: MagicMock, monkeypatch: Mo
 def test_place_order_success(mock_binance_client: MagicMock, monkeypatch: MonkeyPatch) -> None:
     """Test the 'exchange place-order' command with a successful response."""
     mock_instance = mock_binance_client.return_value
+
+    # Mock the order placement
     mock_instance.place_limit_order.return_value = {
         "symbol": "BTCUSDT",
         "orderId": 12345,
@@ -134,6 +135,35 @@ def test_place_order_success(mock_binance_client: MagicMock, monkeypatch: Monkey
         "origQty": "1.0",
         "status": "FILLED",
     }
+
+    # Mock ticker data for current price validation (set current price higher to avoid immediate fill)
+    mock_instance.get_all_tickers.return_value = [
+        {"symbol": "BTCUSDT", "price": "61000.0"}  # Higher than order price to avoid immediate fill
+    ]
+
+    # Mock account info for balance validation
+    mock_instance.get_account_info.return_value = {
+        "balances": [
+            {"asset": "USDT", "free": "100000.0", "locked": "0.0"}  # Sufficient balance
+        ]
+    }
+
+    # Mock open orders (empty for clean balance calculation)
+    mock_instance.get_open_orders.return_value = []
+
+    # Mock exchange info for lot size validation
+    mock_instance.get_exchange_info.return_value = {
+        "symbols": [
+            {
+                "symbol": "BTCUSDT",
+                "filters": [
+                    {"filterType": "LOT_SIZE", "minQty": "0.00001000", "maxQty": "9000.00000000", "stepSize": "0.00001000"},
+                    {"filterType": "PRICE_FILTER", "minPrice": "0.01000000", "maxPrice": "1000000.00000000", "tickSize": "0.01000000"},
+                ],
+            }
+        ]
+    }
+
     result = runner.invoke(
         app,
         [

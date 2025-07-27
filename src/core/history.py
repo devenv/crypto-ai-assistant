@@ -1,4 +1,12 @@
-from typing import List
+"""Trading History Management Module.
+
+This module provides functionality for retrieving and managing
+trading history data from the Binance API.
+"""
+
+from __future__ import annotations
+
+from typing import cast
 
 from api.client import BinanceClient
 from api.models import Trade
@@ -15,7 +23,7 @@ class HistoryService:
         """
         self._client = client
 
-    def get_trade_history(self, symbol: str, limit: int = 10) -> List[Trade]:
+    def get_trade_history(self, symbol: str, limit: int = 10) -> list[Trade]:
         """Fetches trade history for a given symbol.
 
         Args:
@@ -25,4 +33,5 @@ class HistoryService:
         Returns:
             A list of `Trade` TypedDicts, where each object represents a trade.
         """
-        return self._client.get_trade_history(symbol=symbol, limit=limit)
+        result = self._client.get_trade_history(symbol=symbol, limit=limit)
+        return cast(list[Trade], result)

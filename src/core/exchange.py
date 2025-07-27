@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import cast
 
 from api.client import BinanceClient
 from api.models import SymbolInfo
@@ -15,7 +15,7 @@ class ExchangeService:
         """
         self._client = client
 
-    def get_lot_size_info(self, symbol: str) -> Optional[str]:
+    def get_lot_size_info(self, symbol: str) -> str | None:
         """Fetches and returns the LOT_SIZE stepSize for a given symbol.
 
         The step size determines the number of decimal places allowed for the
@@ -46,7 +46,7 @@ class ExchangeService:
         except Exception:
             return None
 
-    def get_symbol_info(self, symbol: str) -> Optional[SymbolInfo]:
+    def get_symbol_info(self, symbol: str) -> SymbolInfo | None:
         """Fetches and returns all filters for a given symbol.
 
         Args:

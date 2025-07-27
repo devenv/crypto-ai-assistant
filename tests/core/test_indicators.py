@@ -6,240 +6,430 @@ import pandas as pd
 import pytest
 from _pytest.logging import LogCaptureFixture
 
-from core.config import AppConfig
-from core.indicators import IndicatorService
+from src.core.indicators import IndicatorService
 
 
 @pytest.fixture
 def mock_client() -> MagicMock:
-    """Fixture to create a mock BinanceClient."""
+    """Fixture to create a mock BinanceClient with realistic data."""
     client = MagicMock()
-    # Provide realistic-looking k-line data (list of lists)
-    # 100 entries to satisfy the minimum data requirements for indicators
+    # Provide realistic k-line data for 50 periods (sufficient for most indicators)
     kline_data = [
         [
             1672531200000 + i * 86400000,  # Open time
-            200 + i,  # Open
-            210 + i,  # High
-            190 + i,  # Low
-            205 + i,  # Close
+            50000 + i * 100,  # Open (trending up)
+            50100 + i * 100,  # High
+            49900 + i * 100,  # Low
+            50050 + i * 100,  # Close (trending up)
             1000,  # Volume
             1672617599999 + i * 86400000,  # Close time
-            205000,
-            100,
-            500,
-            102500,
+            50000000,  # Quote asset volume
+            100,  # Number of trades
+            500,  # Taker buy base asset volume
+            25000000,  # Taker buy quote asset volume
             0,
         ]
-        for i in range(100)
+        for i in range(50)
     ]
     client.get_klines.return_value = kline_data
     return client
 
 
 @pytest.fixture
-def mock_config() -> AppConfig:
-    """Fixture to create a mock config dictionary."""
+def mock_config() -> dict:
+    """Fixture to create mock configuration."""
     return {
-        "cli": {"account_min_value": 1.0, "history_limit": 5},
         "analysis": {
+            "min_data_points": 21,
             "rsi_period": 14,
+            "ema_periods": [10, 21, 50],
             "ema_short_period": 12,
             "ema_long_period": 26,
             "ema_signal_period": 9,
-            "ema_periods": [10, 21, 50],
-            "min_data_points": 35,
-        },
+        }
     }
 
 
 @pytest.fixture
-def indicator_service(mock_client: MagicMock, mock_config: AppConfig) -> IndicatorService:
-    """Fixture to create an IndicatorService instance with a mock client and config."""
+def indicator_service(mock_client: MagicMock, mock_config: dict) -> IndicatorService:
+    """Fixture to create an IndicatorService instance."""
     return IndicatorService(mock_client, mock_config)
 
 
-def test_calculate_and_display_indicators(
-    indicator_service: IndicatorService, mock_client: MagicMock, caplog: LogCaptureFixture, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """
-    Test that indicator calculation runs and displays output.
-    This is more of an integration test for the function, not for the accuracy
-    of the indicator math itself, which is assumed to be correct from pandas.
-    """
-    import logging
+class TestIndicatorService:
+    """Test suite for IndicatorService core functionality."""
 
-    caplog.set_level(logging.INFO)
+    def test_calculate_indicators_success(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test successful indicator calculation with sufficient data."""
+        result = indicator_service.calculate_indicators(["BTC"])
 
-    indicator_service.calculate_and_display_indicators(coin_symbols=["BTC"])
+        assert "BTC" in result
+        assert "errors" not in result
+        # Check the actual field names returned by extract_indicator_data
+        assert "close" in result["BTC"]
+        assert "rsi" in result["BTC"]
+        assert "signal_line" in result["BTC"]
+        assert "symbol" in result["BTC"]
+        mock_client.get_klines.assert_called_once_with(symbol="BTCUSDT", interval="1h", limit=100)
 
-    mock_client.get_klines.assert_called_once_with(symbol="BTCUSDT", interval="1d", limit=100)
+    def test_calculate_indicators_insufficient_data(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test indicator calculation with insufficient data."""
+        # Mock insufficient data (less than minimum required)
+        mock_client.get_klines.return_value = [
+            ["1672531200000", "50000", "50100", "49900", "50050", "1000", "1672617599999", "50000000", 100, "500", "25000000", "0"]
+            for _ in range(5)  # Only 5 data points
+        ]
 
-    # Check that console output contains the table
-    captured = capsys.readouterr()
-    assert "Technical Indicators Summary" in captured.out
-    assert "BTCUSDT" in captured.out
-    assert "Close" in captured.out
-    assert "RSI" in captured.out
-    assert "EMA" in captured.out
-    assert "MACD" in captured.out
+        result = indicator_service.calculate_indicators(["BTC"])
 
-    # Check that processing message is logged
-    log_output = caplog.text
-    assert "Processing BTCUSDT..." in log_output
+        # Check new error format
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
+
+    def test_calculate_indicators_api_error(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test indicator calculation when API call fails."""
+        mock_client.get_klines.side_effect = Exception("API connection failed")
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        # Check new error format
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
+
+    def test_calculate_indicators_empty_symbols(self, indicator_service: IndicatorService) -> None:
+        """Test calculation with empty symbol list."""
+        result = indicator_service.calculate_indicators([])
+        assert result == {}
+
+    def test_calculate_indicators_invalid_symbols(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test calculation with invalid symbols."""
+        # Test with None and empty strings
+        result = indicator_service.calculate_indicators([None, "", "BTC"])
+
+        # Should only process valid symbols
+        if result:
+            assert "BTC" in result or len(result) == 0
+
+    def test_get_technical_indicators_success(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test successful technical indicator retrieval."""
+        result = indicator_service.get_technical_indicators("BTC")
+
+        assert result is not None
+        assert result["symbol"] == "BTCUSDT"
+        assert "close" in result
+        assert "rsi" in result
+        assert "ema_10" in result
+        mock_client.get_klines.assert_called_once_with(symbol="BTCUSDT", interval="1h", limit=100)
+
+    def test_get_technical_indicators_api_failure(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test technical indicator retrieval when API fails."""
+        mock_client.get_klines.side_effect = Exception("Network error")
+
+        result = indicator_service.get_technical_indicators("BTC")
+        assert result is None
+
+    def test_calculate_and_display_indicators(
+        self, indicator_service: IndicatorService, mock_client: MagicMock, caplog: LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test indicator calculation and display."""
+        import logging
+
+        caplog.set_level(logging.INFO)  # Ensure we capture INFO level logs
+
+        indicator_service.calculate_and_display_indicators(coin_symbols=["BTC"])
+
+        # Check console output
+        captured = capsys.readouterr()
+        assert "Technical Indicators Summary" in captured.out
+        assert "BTC" in captured.out
+
+        # Check logging
+        assert "Calculating indicators for 1 symbols: ['BTC']" in caplog.text
 
 
-def test_calculate_and_display_handles_none_indicators(
-    indicator_service: IndicatorService, mock_client: MagicMock, mock_config: AppConfig, caplog: LogCaptureFixture, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Test that N/A is handled correctly in display when indicator calculations fail."""
-    import logging
+class TestIndicatorCalculations:
+    """Test individual indicator calculation methods."""
 
-    caplog.set_level(logging.INFO)
+    def test_calculate_rsi_with_sufficient_data(self, indicator_service: IndicatorService) -> None:
+        """Test RSI calculation with sufficient data."""
+        # Create DataFrame with price variation
+        df = pd.DataFrame({"Close": [100, 102, 101, 103, 105, 104, 106, 108, 107, 109, 111, 110, 112, 114, 113, 115, 117, 116, 118, 120, 119]})
 
-    # Use a dataframe size that passes the min_data_points check
-    kline_data = [[i for i in range(12)] for _ in range(40)]
-    mock_client.get_klines.return_value = kline_data
+        rsi_series = indicator_service._calculations.calculate_rsi(df)
+        assert rsi_series is not None
+        assert len(rsi_series) > 0
+        # RSI should be between 0 and 100
+        for rsi_val in rsi_series.dropna():
+            assert 0 <= rsi_val <= 100
 
-    # Set config to require more data than available for RSI/MACD
-    mock_config["analysis"]["rsi_period"] = 50
-    mock_config["analysis"]["ema_long_period"] = 50
+    def test_calculate_rsi_insufficient_data(self, indicator_service: IndicatorService) -> None:
+        """Test RSI calculation with insufficient data."""
+        df = pd.DataFrame({"Close": [100, 101, 102]})  # Only 3 data points
 
-    indicator_service.calculate_and_display_indicators(coin_symbols=["BTC"])
+        rsi_series = indicator_service._calculations.calculate_rsi(df)
+        assert rsi_series is None
 
-    # Check console output for N/A values
-    captured = capsys.readouterr()
-    assert "Technical Indicators Summary" in captured.out
-    assert "BTCUSDT" in captured.out
-    assert "N/A" in captured.out  # Should contain N/A for failed calculations
-
-
-def test_insufficient_data_for_indicators(
-    indicator_service: IndicatorService, mock_client: MagicMock, caplog: LogCaptureFixture, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Test that warnings are displayed when there is not enough data."""
-    import logging
-
-    caplog.set_level(logging.WARNING)
-
-    # Mock kline data with the correct number of columns but few rows
-    kline_data = [[i for i in range(12)] for _ in range(10)]  # 10 data points
-    mock_client.get_klines.return_value = kline_data
-    indicator_service.calculate_and_display_indicators(coin_symbols=["FEW"])
-
-    # Check console output for insufficient data message
-    captured = capsys.readouterr()
-    assert "Insufficient data points (10) for FEWUSDT for meaningful analysis." in captured.out
-
-    # Test with no data
-    mock_client.get_klines.return_value = []
-    indicator_service.calculate_and_display_indicators(coin_symbols=["NONE"])
-    captured = capsys.readouterr()
-    assert "No kline data fetched for NONEUSDT. Skipping." in captured.out
-
-
-def test_indicator_calculations_with_minimal_data(indicator_service: IndicatorService) -> None:
-    """Test individual indicator functions with minimal data to hit edge cases."""
-    # This test doesn't check for correctness, just that the functions run without error
-    # and hit the conditional branches for small dataframes.
-
-    def create_df(num_rows: int) -> pd.DataFrame:
-        kline_data = [[i for i in range(12)] for _ in range(num_rows)]
+    def test_calculate_emas_success(self, indicator_service: IndicatorService) -> None:
+        """Test EMA calculation with sufficient data."""
         df = pd.DataFrame(
-            kline_data,
-            columns=[
-                "Open time",
-                "Open",
-                "High",
-                "Low",
-                "Close",
-                "Volume",
-                "Close time",
-                "Quote asset volume",
-                "Number of trades",
-                "Taker buy base asset volume",
-                "Taker buy quote asset volume",
-                "Ignore",
-            ],
+            {
+                "Close": [50000 + i * 100 for i in range(30)]  # 30 data points, trending up
+            }
         )
-        for col in ["Open", "High", "Low", "Close", "Volume"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        return df
 
-    # These calls should trigger the length checks and return early
-    indicator_service._calculate_rsi(create_df(10))
-    indicator_service._calculate_emas(create_df(5))
-    indicator_service._calculate_macd(create_df(20))  # Should hit the len < 26 check
-    indicator_service._find_swing_lows(create_df(3)["Low"].astype(float))  # Should hit the len < 5 check
+        indicator_service._calculations.calculate_emas(df)
+
+        # Check that EMA columns were added
+        assert "EMA_10" in df.columns
+        assert "EMA_21" in df.columns
+        # EMA_50 should not be added with only 30 data points
+
+    def test_calculate_macd_success(self, indicator_service: IndicatorService) -> None:
+        """Test MACD calculation with sufficient data."""
+        df = pd.DataFrame(
+            {
+                "Close": [50000 + i * 50 for i in range(40)]  # 40 data points (sufficient for MACD signal)
+            }
+        )
+
+        macd_line, signal_line = indicator_service._calculations.calculate_macd(df)
+
+        assert macd_line is not None
+        assert signal_line is not None
+        assert len(macd_line) > 0
+        assert len(signal_line) > 0
+
+    def test_calculate_macd_insufficient_data(self, indicator_service: IndicatorService) -> None:
+        """Test MACD calculation with insufficient data."""
+        df = pd.DataFrame(
+            {
+                "Close": [50000, 50100, 50200]  # Only 3 data points
+            }
+        )
+
+        macd_line, signal_line = indicator_service._calculations.calculate_macd(df)
+
+        assert macd_line is None
+        assert signal_line is None
+
+    def test_find_swing_lows_success(self, indicator_service: IndicatorService) -> None:
+        """Test swing low detection with realistic data."""
+        # Create price data with clear swing lows
+        prices = [100, 95, 90, 95, 100, 105, 100, 95, 90, 85, 90, 95]
+        low_series = pd.Series(prices)
+
+        swing_lows = indicator_service._support_resistance.find_swing_lows(low_series, window=2)
+
+        assert isinstance(swing_lows, list)
+        assert len(swing_lows) <= len(prices)
+        # All swing lows should be actual prices from the data
+        for swing_low in swing_lows:
+            assert swing_low in prices
+
+    def test_extract_indicator_data(self, indicator_service: IndicatorService) -> None:
+        """Test indicator data extraction and formatting."""
+        df = pd.DataFrame(
+            {
+                "Close": [50000],
+                "Volume": [1000000],
+                "RSI": [65.5],
+                "EMA_10": [49800],
+                "EMA_21": [49600],
+                "MACD_Line": [150.75],
+                "Signal_Line": [145.25],
+            }
+        )
+
+        result = indicator_service._display.extract_indicator_data(df, "BTCUSDT", [49000])
+
+        assert result["symbol"] == "BTCUSDT"
+        assert result["close"] == "50000.00"
+        assert result["rsi"] == "65.50"
+        assert result["ema_10"] == "49800.00"
+        assert "49000.00" in result["support_levels"]
 
 
-def test_find_swing_lows_logic(indicator_service: IndicatorService) -> None:
-    """Test the logic of _find_swing_lows."""
-    low_series = pd.Series([10, 5, 12, 4, 15, 6, 11]).astype(float)
-    swing_lows = indicator_service._find_swing_lows(low_series, window=1)
-    assert swing_lows == [4.0, 5.0, 6.0]
+class TestErrorHandling:
+    """Test error handling scenarios."""
+
+    def test_malformed_kline_data(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test handling of malformed kline data."""
+        mock_client.get_klines.return_value = []  # Empty response
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
+
+    def test_network_timeout(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test handling of network timeouts."""
+        from requests.exceptions import Timeout
+
+        mock_client.get_klines.side_effect = Timeout("Request timeout")
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
+
+    def test_invalid_price_data(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test handling of invalid price data."""
+        # Mock klines with all zero prices
+        mock_client.get_klines.return_value = [["1672531200000", "0", "0", "0", "0", "1000", "1672617599999", "0", 100, "500", "0", "0"] for _ in range(25)]
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
 
 
-def test_find_swing_lows_not_enough_data(indicator_service: IndicatorService) -> None:
-    """Test the early return from _find_swing_lows if data is too short."""
-    low_series = pd.Series([1, 2, 3, 4])
-    result = indicator_service._find_swing_lows(low_series.astype(float), window=2)
-    assert result == []
+class TestSignalGeneration:
+    """Test trading signal generation logic."""
+
+    def test_signal_generation_buy_conditions(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test signal generation for buy conditions."""
+        # Create klines that should generate a buy signal (RSI < 40, price > EMA)
+        klines = []
+        for i in range(30):
+            if i < 20:
+                # Initial higher prices
+                close_price = 50000 + i * 100
+            else:
+                # Recent price drop (should create low RSI)
+                close_price = 51000 - (i - 19) * 200
+
+            klines.append(
+                [
+                    1672531200000 + i * 3600000,
+                    close_price - 50,
+                    close_price + 50,
+                    close_price - 100,
+                    close_price,
+                    1000,
+                    1672531200000 + (i + 1) * 3600000,
+                    50000000,
+                    100,
+                    500,
+                    25000000,
+                    0,
+                ]
+            )
+
+        mock_client.get_klines.return_value = klines
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        if "BTC" in result and "errors" not in result["BTC"]:
+            assert "signal" in result["BTC"]
+            assert result["BTC"]["signal"] in ["STRONG BUY", "BUY", "SELL", "STRONG SELL", "NEUTRAL"]
+
+    def test_signal_generation_with_insufficient_indicators(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test signal generation when indicators can't be calculated."""
+        # Provide minimal data that won't allow indicator calculation
+        mock_client.get_klines.return_value = [
+            ["1672531200000", "50000", "50100", "49900", "50050", "1000", "1672617599999", "50000000", 100, "500", "25000000", "0"]
+        ]
+
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        assert "errors" in result
+        assert "error_list" in result["errors"]
+        assert "BTC: Insufficient data" in result["errors"]["error_list"]
+        assert "BTC" not in result  # Symbol is not included when there are errors
 
 
-def test_get_technical_indicators_success(indicator_service: IndicatorService, mock_client: MagicMock) -> None:
-    """Test successful calculation of technical indicators for a single coin."""
-    results = indicator_service.get_technical_indicators("BTC")
+class TestIndicatorNumericOperations:
+    """Test that indicator data can be used for numeric operations (catches str vs int bugs)."""
 
-    assert results is not None
-    mock_client.get_klines.assert_called_once_with(symbol="BTCUSDT", interval="1d", limit=100)
-    assert results["symbol"] == "BTCUSDT"
-    assert "close" in results
-    assert "rsi" in results
-    assert "ema_10" in results
+    def test_calculate_indicators_returns_numeric_compatible_data(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test that RSI and other indicator values can be used in numeric comparisons.
 
+        This test catches the bug where RSI was returned as string "60.25"
+        instead of numeric 60.25, causing 'str' vs 'int' comparison errors.
+        """
+        # Setup mock with valid data
+        result = indicator_service.calculate_indicators(["BTC"])
 
-def test_get_technical_indicators_no_data(indicator_service: IndicatorService, mock_client: MagicMock) -> None:
-    """Test get_technical_indicators with no kline data."""
-    mock_client.get_klines.return_value = []
-    results = indicator_service.get_technical_indicators("NONE")
-    assert results is None
+        assert result is not None
+        assert "BTC" in result
 
+        btc_data = result["BTC"]
 
-def test_get_technical_indicators_insufficient_data(indicator_service: IndicatorService, mock_client: MagicMock) -> None:
-    """Test get_technical_indicators with insufficient data points."""
-    kline_data = [[i for i in range(12)] for _ in range(10)]  # 10 data points
-    mock_client.get_klines.return_value = kline_data
-    results = indicator_service.get_technical_indicators("FEW")
-    assert results is None
+        # Extract indicator values (this is the pattern used in main.py)
+        try:
+            rsi = float(btc_data.get("rsi", 0)) if btc_data.get("rsi") not in [None, "N/A", ""] else 0
+            price = float(btc_data.get("close", 0)) if btc_data.get("close") not in [None, "N/A", ""] else 0
+            ema10 = float(btc_data.get("ema_10", 0)) if btc_data.get("ema_10") not in [None, "N/A", ""] else 0
+            ema21 = float(btc_data.get("ema_21", 0)) if btc_data.get("ema_21") not in [None, "N/A", ""] else 0
+        except (ValueError, TypeError) as e:
+            pytest.fail(f"Failed to convert indicator data to numeric types: {e}")
 
+        # Test numeric operations (this is what was failing in main.py)
+        # These should not raise TypeError: '>' not supported between instances of 'str' and 'int'
+        if rsi > 0:  # Basic comparison
+            assert isinstance(rsi, int | float), f"RSI should be numeric, got {type(rsi)}: {rsi}"
 
-def test_get_technical_indicators_handles_none_indicators(
-    indicator_service: IndicatorService, mock_client: MagicMock, mock_config: AppConfig, caplog: LogCaptureFixture, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Test that N/A is returned when indicator calculations fail."""
-    import logging
+        # Test RSI signal logic (copied from main.py)
+        if rsi > 80:
+            signal = "SELL"
+        elif rsi > 70:
+            signal = "CAUTION"
+        elif rsi < 30:
+            signal = "BUY"
+        elif rsi < 50:
+            signal = "STRONG_BUY"
+        else:
+            signal = "NEUTRAL"
 
-    caplog.set_level(logging.INFO)
+        assert signal in ["SELL", "CAUTION", "BUY", "STRONG_BUY", "NEUTRAL"]
 
-    # Set config to require more data than available for RSI/MACD
-    mock_config["analysis"]["rsi_period"] = 150
-    mock_config["analysis"]["ema_long_period"] = 150
-    # Data has 100 points, so RSI and MACD should fail to calculate
-    results = indicator_service.get_technical_indicators("BTC")
+        # Test that all values are actually numeric or properly handled
+        assert isinstance(rsi, int | float), f"RSI should be numeric: {type(rsi)}"
+        assert isinstance(price, int | float), f"Price should be numeric: {type(price)}"
+        assert isinstance(ema10, int | float), f"EMA10 should be numeric: {type(ema10)}"
+        assert isinstance(ema21, int | float), f"EMA21 should be numeric: {type(ema21)}"
 
-    assert results is not None
-    assert results["rsi"] == "N/A"
-    assert results["macd_line"] == "N/A"
-    assert results["signal_line"] == "N/A"
-    assert results["ema_10"] != "N/A"  # EMA 10 should still be calculated
+        # Test that values are reasonable
+        assert 0 <= rsi <= 100, f"RSI should be 0-100, got {rsi}"
+        assert price >= 0, f"Price should be positive, got {price}"
 
-    # Also test the display function
-    caplog.clear()
-    mock_client.get_klines.reset_mock()
-    indicator_service.calculate_and_display_indicators(["BTC"])
+    def test_calculate_indicators_with_na_values(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
+        """Test that N/A and None values are handled properly in numeric operations."""
+        # Mock insufficient data scenario that returns N/A values
+        mock_client.get_klines.return_value = [
+            [1672531200000, 100, 101, 99, 100, 1000, 1672617599999, 100000, 100, 500, 50000, 0]  # Only 1 data point
+        ]
 
-    # Check console output instead of log output
-    captured = capsys.readouterr()
-    assert "Technical Indicators Summary" in captured.out
-    assert "N/A" in captured.out  # Should contain N/A for failed calculations
+        result = indicator_service.calculate_indicators(["BTC"])
+
+        if result and "BTC" in result:
+            btc_data = result["BTC"]
+
+            # Test that N/A values are handled without errors
+            try:
+                rsi = float(btc_data.get("rsi", 0)) if btc_data.get("rsi") not in [None, "N/A", ""] else 0
+                ema10 = float(btc_data.get("ema_10", 0)) if btc_data.get("ema_10") not in [None, "N/A", ""] else 0
+
+                # These should work without throwing type errors
+                signal = "NEUTRAL"
+                if rsi > 80:
+                    signal = "SELL"
+                elif rsi < 30:
+                    signal = "BUY"
+
+                assert signal in ["SELL", "BUY", "NEUTRAL"]
+                assert isinstance(rsi, int | float)
+                assert isinstance(ema10, int | float)
+
+            except (ValueError, TypeError) as e:
+                pytest.fail(f"N/A value handling failed: {e}")

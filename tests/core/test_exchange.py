@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from core.exchange import ExchangeService
+from src.core.exchange import ExchangeService
 
 
 @pytest.fixture

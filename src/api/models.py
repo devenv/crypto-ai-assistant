@@ -1,11 +1,14 @@
 """
-This module defines Pydantic models for API responses.
+This module defines TypedDict models for API responses.
 """
 
-from typing import Any, List, Optional, TypedDict
+from typing import Any, TypedDict
+
+# Raw kline data from Binance API - list of values in specific order
+RawKline = list[Any]  # [open_time, open, high, low, close, volume, close_time, ...]
 
 
-class Kline(TypedDict):
+class Kline(TypedDict):  # noqa: vulture
     """Represents a single kline/candlestick data point."""
 
     open_time: int
@@ -22,14 +25,14 @@ class Kline(TypedDict):
     ignore: str
 
 
-class Ticker(TypedDict):
+class Ticker(TypedDict):  # noqa: vulture
     """Represents a price ticker for a single symbol."""
 
     symbol: str
     price: str
 
 
-class Fill(TypedDict):
+class Fill(TypedDict):  # noqa: vulture
     """Represents a single fill for an order."""
 
     price: str
@@ -39,7 +42,7 @@ class Fill(TypedDict):
     tradeId: int
 
 
-class Order(TypedDict):
+class Order(TypedDict):  # noqa: vulture
     """Represents a single order."""
 
     symbol: str
@@ -59,7 +62,7 @@ class Order(TypedDict):
     time: int
     updateTime: int
     isWorking: bool
-    fills: List["Fill"]
+    fills: list["Fill"]
 
 
 class OcoOrder(TypedDict):
@@ -72,8 +75,8 @@ class OcoOrder(TypedDict):
     listOrderStatus: str
     listClientOrderId: str
     transactionTime: int
-    orders: List[dict[str, Any]]
-    orderReports: List[Order]
+    orders: list[dict[str, Any]]
+    orderReports: list[Order]
 
 
 class Balance(TypedDict):
@@ -82,6 +85,16 @@ class Balance(TypedDict):
     asset: str
     free: str
     locked: str
+
+
+class ProcessedBalance(TypedDict):
+    """Represents a processed balance with calculated values."""
+
+    asset: str
+    free: float
+    locked: float
+    total: float
+    value_usdt: float
 
 
 class Trade(TypedDict):
@@ -94,21 +107,49 @@ class Trade(TypedDict):
     commission: str
     commissionAsset: str
     time: int
-    permissions: List[str]
+    permissions: list[str]
     total_portfolio_value: float
-    balances: List[Balance]
+    balances: list[Balance]
 
 
-class AccountInfo(TypedDict):
+class AccountInfo(TypedDict):  # noqa: vulture
     """Represents the user's account information."""
 
-    balances: List[Balance]
+    balances: list[Balance]
     canTrade: bool
     canWithdraw: bool
     canDeposit: bool
     updateTime: int
     accountType: str
-    permissions: List[str]
+    permissions: list[str]
+
+
+class APIErrorResponse(TypedDict):
+    """Represents an API error response."""
+
+    code: int
+    msg: str
+
+
+class ServerTimeResponse(TypedDict):
+    """Represents a server time response."""
+
+    serverTime: int
+
+
+class TickerPriceResponse(TypedDict):
+    """Represents a ticker price response."""
+
+    symbol: str
+    price: str
+
+
+class ValidationError(TypedDict):
+    """Represents a validation error message."""
+
+    type: str
+    message: str
+    suggestion: str | None
 
 
 class RateLimit(TypedDict):
@@ -124,13 +165,13 @@ class SymbolFilter(TypedDict):
     """Represents a filter for a symbol, defining trading rules."""
 
     filterType: str
-    minPrice: Optional[str]
-    maxPrice: Optional[str]
-    tickSize: Optional[str]
-    minQty: Optional[str]
-    maxQty: Optional[str]
-    stepSize: Optional[str]
-    minNotional: Optional[str]
+    minPrice: str | None
+    maxPrice: str | None
+    tickSize: str | None
+    minQty: str | None
+    maxQty: str | None
+    stepSize: str | None
+    minNotional: str | None
 
 
 class SymbolInfo(TypedDict):
@@ -142,13 +183,13 @@ class SymbolInfo(TypedDict):
     baseAssetPrecision: int
     quoteAsset: str
     quoteAssetPrecision: int
-    orderTypes: List[str]
+    orderTypes: list[str]
     icebergAllowed: bool
     ocoAllowed: bool
     isSpotTradingAllowed: bool
     isMarginTradingAllowed: bool
-    filters: List[SymbolFilter]
-    permissions: List[str]
+    filters: list[SymbolFilter]
+    permissions: list[str]
 
 
 class ExchangeInfo(TypedDict):
@@ -156,5 +197,5 @@ class ExchangeInfo(TypedDict):
 
     timezone: str
     serverTime: int
-    rateLimits: List[RateLimit]
-    symbols: List[SymbolInfo]
+    rateLimits: list[RateLimit]
+    symbols: list[SymbolInfo]

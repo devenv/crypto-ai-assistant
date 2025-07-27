@@ -114,4 +114,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Development files
+dev-todo.md
+
 data/
+.hypothesis
+/monitoring_log.md

@@ -5,7 +5,7 @@ import pytest
 import toml
 
 from core import config
-from core.config import AppConfig
+from src.core.config import AppConfig
 
 
 @pytest.fixture(autouse=True)

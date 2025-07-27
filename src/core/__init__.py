@@ -2,12 +2,12 @@
 This module provides core business logic for the application.
 """
 
-from core.account import AccountService
-from core.config import get_config
-from core.exchange import ExchangeService
-from core.history import HistoryService
-from core.indicators import IndicatorService
-from core.orders import OrderService
+from .account import AccountService
+from .config import get_config
+from .exchange import ExchangeService
+from .history import HistoryService
+from .indicators import IndicatorService
+from .orders import OrderService
 
 __all__ = [
     "AccountService",

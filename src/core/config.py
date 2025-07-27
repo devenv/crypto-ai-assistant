@@ -1,12 +1,20 @@
+"""Configuration Management Module.
+
+This module handles loading and managing application configuration
+from TOML files with proper type safety.
+"""
+
 import importlib.resources
-from typing import List, TypedDict, cast
+from typing import TypedDict, cast
 
 import toml
 
 
 # --- Type Definitions for Config ---
 class AnalysisConfig(TypedDict):
-    ema_periods: List[int]
+    """Configuration for technical analysis parameters."""
+
+    ema_periods: list[int]
     ema_short_period: int
     ema_long_period: int
     ema_signal_period: int
@@ -15,11 +23,15 @@ class AnalysisConfig(TypedDict):
 
 
 class CLIConfig(TypedDict):
+    """Configuration for command-line interface parameters."""
+
     account_min_value: float
     history_limit: int
 
 
 class AppConfig(TypedDict):
+    """Main application configuration structure."""
+
     analysis: AnalysisConfig
     cli: CLIConfig
 

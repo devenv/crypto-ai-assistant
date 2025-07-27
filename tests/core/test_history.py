@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from core.history import HistoryService
+from src.core.history import HistoryService
 
 
 @pytest.fixture
