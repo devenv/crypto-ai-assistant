@@ -1,38 +1,3 @@
-## 🚨 **CRITICAL WARNING: NEVER USE --no-verify** ⚠️
-
-**❌ ABSOLUTE PROHIBITION: `git commit --no-verify` IS FORBIDDEN FOR CODE QUALITY ISSUES**
-
-**⚠️ EMERGENCY-ONLY EXCEPTIONS:**
-- ✅ Pre-commit hook configuration is broken (NOT code issues)
-- ✅ CI/CD pipeline tool failures (NOT code quality failures)
-- ✅ Development tool installation issues (NOT linting/test failures)
-
-**❌ NEVER BYPASS FOR:**
-- Code quality failures (ruff, mypy, pytest)
-- Test failures or insufficient coverage
-- Import errors or syntax issues
-- Architecture violations
-- "I'll fix it later" situations
-- Time pressure or deadlines
-- ANY code-related problems
-
-**🔒 IF YOU MUST BYPASS (TOOL ISSUES ONLY):**
-```bash
-# MANDATORY: Prove it's a tool issue, not code
-python scripts/staged-check.py  # Must show tool failure, not code failure
-
-# Document the EXACT tool problem
-git commit --no-verify -m "fix: bypass due to [SPECIFIC TOOL ISSUE]
-
-JUSTIFICATION: [EXACT TOOL ERROR]
-CODE STATUS: All quality checks pass manually
-FOLLOW-UP: Fix tool configuration immediately"
-```
-
-**🚨 REMEMBER: Quality issues are BLOCKING ERRORS, not optional warnings!**
-
----
-
 ## ⚡ **AUTOFIX-FIRST DEVELOPMENT PROTOCOL (MANDATORY)**
 
 **🚨 CRITICAL**: Every development session MUST follow this automation-first approach to maintain code quality and reduce manual effort.

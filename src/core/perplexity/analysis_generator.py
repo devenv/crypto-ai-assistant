@@ -249,16 +249,6 @@ Focus on strategic insights and market intelligence that inform decision-making.
                 ]
             )
 
-        # Add synthesis context if provided
-        if synthesis_context:
-            user_prompt_parts.extend(
-                [
-                    "",
-                    "**ADDITIONAL CONTEXT:**",
-                    synthesis_context,
-                ]
-            )
-
         # Add streamlined analysis requirements
         user_prompt_parts.extend(
             [
@@ -401,7 +391,7 @@ STRATEGIC TIMING FOCUS:
         # STAGE 2: Build synthesis context for final strategic intelligence
 
         # Build synthesis context for strategic critique and enhancement
-        synthesis_context_built = f"""
+        synthesis_context = f"""
 ================================================================================
 SYNTHESIS CONTEXT FOR STRATEGIC INTELLIGENCE
 ================================================================================
@@ -421,30 +411,30 @@ Analysis Timestamp: {self._get_current_timestamp()}
 
         # Add enhanced context sections if available
         if protection_analysis:
-            synthesis_context_built += f"""
+            synthesis_context += f"""
 **PROTECTION COVERAGE ANALYSIS:**
 {protection_analysis}
 """
 
         if balance_analysis:
-            synthesis_context_built += f"""
+            synthesis_context += f"""
 **EFFECTIVE BALANCE BREAKDOWN:**
 {balance_analysis}
 """
 
         if risk_context:
-            synthesis_context_built += f"""
+            synthesis_context += f"""
 **RISK MANAGEMENT CONTEXT:**
 {risk_context}
 """
 
         if recent_activity_context:
-            synthesis_context_built += f"""
+            synthesis_context += f"""
 **RECENT ACTIVITY CONTEXT:**
 {recent_activity_context}
 """
 
-        synthesis_context_built += f"""
+        synthesis_context += f"""
 ================================================================================
 COMPREHENSIVE MARKET ANALYSIS (All Perspectives):
 ================================================================================
@@ -482,7 +472,7 @@ COMPREHENSIVE MARKET ANALYSIS (All Perspectives):
             risk_context,
             recent_activity_context,
             source_focus="synthesis",
-            synthesis_context=synthesis_context_built,
+            synthesis_context=synthesis_context,
         )
 
         # Calculate consistency score between comprehensive analysis and synthesis

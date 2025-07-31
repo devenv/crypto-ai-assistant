@@ -78,18 +78,14 @@ class TextAnalyzer:
         if not analysis_1 or not analysis_2:
             return 0.0
 
-        # Handle identical text case first
-        if analysis_1 == analysis_2:
-            return 100.0
-
         # Convert to lowercase for comparison
         text_1 = analysis_1.lower()
         text_2 = analysis_2.lower()
 
         # Check for common key terms and sentiment indicators
-        bullish_terms = ["buy", "accumulate", "bullish", "opportunity", "up", "rise", "rally", "pump", "moon", "gains", "increase", "higher", "surge"]
-        bearish_terms = ["sell", "reduce", "bearish", "risk", "drop", "fall", "decline", "crash", "dump", "losses", "decrease", "lower", "plunge"]
-        neutral_terms = ["hold", "neutral", "wait"]
+        bullish_terms = ["bullish", "buy", "accumulate", "opportunity", "positive", "strong", "upward", "rally"]
+        bearish_terms = ["bearish", "sell", "reduce", "risk", "negative", "weak", "downward", "decline"]
+        neutral_terms = ["hold", "wait", "monitor", "sideways", "consolidation", "neutral"]
 
         # Count sentiment indicators in both analyses
         sentiment_1: dict[str, int] = self._get_sentiment_scores(text_1, bullish_terms, bearish_terms, neutral_terms)
@@ -107,7 +103,7 @@ class TextAnalyzer:
         if asset_mentions_1 + asset_mentions_2 > 0:
             asset_consistency = min(asset_mentions_1, asset_mentions_2) / max(asset_mentions_1, asset_mentions_2) * 100
         else:
-            asset_consistency = 0.0  # No crypto assets mentioned - no consistency
+            asset_consistency = 50.0  # neutral if no assets mentioned
 
         # Check for similar strategic themes
         strategy_terms = ["accumulation", "protection", "rotation", "institutional", "sentiment", "timing"]
@@ -115,12 +111,7 @@ class TextAnalyzer:
         strategy_consistency = (strategy_overlap / len(strategy_terms)) * 100
 
         # Weighted average of different consistency factors
-        if asset_mentions_1 + asset_mentions_2 > 0:
-            # When crypto assets are mentioned, use normal weighting
-            final_score = sentiment_consistency * 0.5 + asset_consistency * 0.3 + strategy_consistency * 0.2
-        else:
-            # When no crypto assets mentioned, focus more on sentiment and less on strategy
-            final_score = sentiment_consistency * 0.7 + asset_consistency * 0.1 + strategy_consistency * 0.2
+        final_score = sentiment_consistency * 0.5 + asset_consistency * 0.3 + strategy_consistency * 0.2
 
         return min(100.0, max(0.0, final_score))
 
@@ -205,83 +196,34 @@ class TextAnalyzer:
         if (high_risk_1 and low_risk_2) or (low_risk_1 and high_risk_2):
             discrepancies.append("Risk assessment: Conflicting risk environment evaluation")
 
-        # Check for conflicting price direction predictions
-        price_up_indicators_1 = any(term in text_1 for term in ["go up", "rise", "increase", "higher", "rally", "pump", "surge", "moon"])
-        price_down_indicators_1 = any(term in text_1 for term in ["drop", "fall", "decrease", "lower", "decline", "crash", "dump", "plunge"])
-
-        price_up_indicators_2 = any(term in text_2 for term in ["go up", "rise", "increase", "higher", "rally", "pump", "surge", "moon"])
-        price_down_indicators_2 = any(term in text_2 for term in ["drop", "fall", "decrease", "lower", "decline", "crash", "dump", "plunge"])
-
-        if (price_up_indicators_1 and price_down_indicators_2) or (price_down_indicators_1 and price_up_indicators_2):
-            discrepancies.append("Price direction: Conflicting predictions about price movement direction")
-
         return discrepancies
 
     def _get_asset_sentiment(self, text: str, asset_short: str, asset_long: str) -> str | None:
         """Get sentiment for a specific asset from text."""
-        words = text.split()
-        asset_indices = []
+        asset_section = ""
 
-        # Find all mentions of the asset
-        for i, word in enumerate(words):
-            if asset_short.lower() in word.lower() or asset_long.lower() in word.lower():
-                asset_indices.append(i)
+        # Try to find sections mentioning the asset
+        for word in text.split():
+            if asset_short in word or asset_long in word:
+                # Get surrounding context (5 words before and after)
+                words = text.split()
+                try:
+                    idx = words.index(word)
+                    start = max(0, idx - 5)
+                    end = min(len(words), idx + 6)
+                    asset_section += " " + " ".join(words[start:end])
+                except ValueError:
+                    continue
 
-        if not asset_indices:
+        if not asset_section:
             return None
 
-        # Score sentiment terms by distance from asset mentions (within 4 words)
-        bullish_score = 0.0
-        bearish_score = 0.0
-        neutral_score = 0.0
-
-        bullish_terms = ["buy", "accumulate", "bullish", "opportunity", "up", "rise", "rally", "pump", "moon", "gains", "increase", "higher", "surge"]
-        bearish_terms = ["sell", "reduce", "bearish", "risk", "drop", "fall", "decline", "crash", "dump", "losses", "decrease", "lower", "plunge", "sold"]
-        neutral_terms = ["hold", "neutral", "wait"]
-
-        for asset_idx in asset_indices:
-            # Look at words within 4 positions of each asset mention
-            start = max(0, asset_idx - 4)
-            end = min(len(words), asset_idx + 5)
-
-            for i in range(start, end):
-                if i == asset_idx:
-                    continue  # Skip the asset word itself
-
-                word = words[i].lower().rstrip(".,!?")  # Remove punctuation for better matching
-                distance = abs(i - asset_idx)
-                weight = max(1, 5 - distance)  # Closer words get higher weight
-
-                # Check for sentence separators between asset and sentiment word
-                sentence_barrier = False
-                if i < asset_idx:  # Word is before asset
-                    for j in range(i, asset_idx):
-                        if any(punct in words[j] for punct in [",", ".", ";", "!"]) or words[j].lower() == "and":
-                            sentence_barrier = True
-                            break
-                elif i > asset_idx:  # Word is after asset
-                    for j in range(asset_idx, i):
-                        if any(punct in words[j] for punct in [",", ".", ";", "!"]) or words[j].lower() == "and":
-                            sentence_barrier = True
-                            break
-
-                # Reduce weight if there's a sentence barrier
-                if sentence_barrier:
-                    weight = max(1, weight // 3)  # More aggressive reduction
-
-                if any(term in word for term in bullish_terms):
-                    bullish_score += weight
-                elif any(term in word for term in bearish_terms):
-                    bearish_score += weight * 1.1  # Slight priority for safety, but less aggressive
-                elif any(term in word for term in neutral_terms):
-                    neutral_score += weight
-
-        # Return sentiment with highest score (bearish wins ties for safety)
-        if bearish_score > 0 and bearish_score >= bullish_score and bearish_score >= neutral_score:
-            return "bearish"
-        elif bullish_score > neutral_score and bullish_score > bearish_score:
+        # Analyze sentiment in the asset context
+        if any(term in asset_section for term in ["buy", "accumulate", "bullish", "opportunity"]):
             return "bullish"
-        elif neutral_score > 0:
+        elif any(term in asset_section for term in ["sell", "reduce", "bearish", "risk"]):
+            return "bearish"
+        elif any(term in asset_section for term in ["hold", "neutral", "wait"]):
             return "neutral"
         else:
             return None

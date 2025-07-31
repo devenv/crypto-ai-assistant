@@ -26,7 +26,10 @@ from api.exceptions import (
 )
 from src.core.perplexity.models import SessionCostSummary
 from src.core.perplexity.service import PerplexityService
-from src.core.perplexity_service import CostBreakdown, ParallelAnalysisResult
+from src.core.perplexity_service import (
+    CostBreakdown,
+    ParallelAnalysisResult,
+)
 
 
 class TestPerplexityServiceInitialization:
@@ -380,11 +383,10 @@ class TestPerplexityServicePortfolioAnalysis:
 
         assert result == "Enhanced analysis"
 
-        # Verify the context was included in the request (check all messages)
+        # Verify the context was included in the request
         call_args = mock_post.call_args[1]["json"]
-        all_messages = call_args["messages"]
-        all_content = " ".join([msg["content"] for msg in all_messages])
-        assert "context data" in all_content
+        prompt_text = call_args["messages"][0]["content"]
+        assert "context data" in prompt_text
 
     @patch.dict(os.environ, {"PERPLEXITY_API_KEY": "test_key"})
     @patch("src.core.perplexity.service.requests.post")
@@ -451,8 +453,8 @@ class TestPerplexityServiceParallelAnalysis:
         result = service.generate_parallel_market_timing_analysis("market", "account")
 
         assert isinstance(result, ParallelAnalysisResult)
-        assert result.primary_analysis == "Market analysis"
-        assert 0 <= result.consistency_score <= 100
+        assert result.primary_response == "Market analysis"
+        assert 0 <= result.enhancement_score <= 100
 
 
 class TestPerplexityServiceTextAnalysis:
@@ -480,7 +482,7 @@ class TestPerplexityServiceTextAnalysis:
 
         # Completely different text
         different_score = service.calculate_text_consistency_score("crypto bullish", "weather sunny")
-        assert different_score < 0.6  # More realistic threshold
+        assert different_score < 0.3
 
         # Empty strings
         empty_score = service.calculate_text_consistency_score("", "")
@@ -521,7 +523,7 @@ class TestPerplexityServiceTextAnalysis:
         """Test asset-specific sentiment analysis."""
         service = PerplexityService("test_key")
 
-        text = "Bitcoin looks very bullish. Ethereum should be sold due to bearish outlook. Solana is neutral, wait and see."
+        text = "Bitcoin looks very bullish, Ethereum should be sold bearish risk, and Solana is neutral wait"
 
         btc_sentiment = service._get_asset_sentiment(text, "BTC", "Bitcoin")
         eth_sentiment = service._get_asset_sentiment(text, "ETH", "Ethereum")
@@ -550,31 +552,15 @@ class TestPerplexityServiceHelperMethods:
         """Test response quality validation."""
         service = PerplexityService("test_key")
 
-        # Good response with required sections and sufficient length
-        good_response = """
-        EXECUTIVE SUMMARY:
-        This is a comprehensive analysis of Bitcoin showing strong bullish momentum with institutional adoption driving price discovery above $118K. The market regime indicates a healthy consolidation phase with selective altcoin rotation opportunities, particularly in Ethereum and Layer-1 tokens. Strategic positioning should focus on maintaining BTC exposure while capitalizing on altcoin momentum during this cycle.
-
-        MARKET SENTIMENT & REGIME:
-        Current market sentiment reflects institutional confidence with record ETF inflows exceeding $4B weekly. Bitcoin dominance at 60% indicates stable leadership while allowing altcoin participation. The regime is bullish consolidation with technical indicators supporting continuation patterns.
-
-        STRATEGIC POSITIONING:
-        Portfolio should maintain 40% BTC allocation with tactical altcoin exposure. Current technical levels provide clear entry points for Ethereum around $3,200 and Solana near $180 support levels.
-
-        TIMING CONSIDERATIONS:
-        Market timing favors accumulation during minor pullbacks with momentum indicators supporting Q4 rally continuation. Risk management through layered orders and protection levels remains priority.
-        """
-
-        # Poor response - too short and missing sections
-        poor_response = "Bitcoin looks good, might go up or down. Buy maybe."
+        good_response = "This is a detailed analysis of Bitcoin with specific price targets and clear reasoning"
+        poor_response = "Yes"
 
         good_quality = service.validate_perplexity_response_quality(good_response)
         poor_quality = service.validate_perplexity_response_quality(poor_response)
 
-        # Update assertions to match binary scoring (1.0 for valid, 0.0 for invalid)
-        assert good_quality["score"] >= poor_quality["score"]
-        assert good_quality["is_valid"] is True
-        assert poor_quality["is_valid"] is False
+        assert good_quality["score"] > poor_quality["score"]
+        assert good_quality["score"] > 0.7
+        assert poor_quality["score"] < 0.5
 
     def test_calculate_consistency_score_recommendations(self):
         """Test consistency scoring for recommendations."""
