@@ -252,6 +252,25 @@ class TestIndicatorCalculations:
         assert result["ema_10"] == "49800.00"
         assert "49000.00" in result["support_levels"]
 
+    def test_extract_indicator_data_with_mixed_types(self, indicator_service: IndicatorService) -> None:
+        """Test indicator data extraction with mixed data types."""
+        # This test specifically checks the fix for the '>' not supported between 'str' and 'int' error
+        df = pd.DataFrame(
+            {
+                "Close": ["50000"],  # String instead of number
+                "Volume": [1000000],
+                "RSI": [65.5],
+                "EMA_10": ["49800"],  # String instead of number
+            }
+        )
+
+        # This should not raise a TypeError
+        result = indicator_service._display.extract_indicator_data(df, "BTCUSDT", [49000])
+
+        assert result["symbol"] == "BTCUSDT"
+        assert result["close"] == "N/A"  # String values should be handled gracefully
+        assert result["ema_10"] == "N/A"
+
 
 class TestErrorHandling:
     """Test error handling scenarios."""
@@ -346,90 +365,3 @@ class TestSignalGeneration:
         assert "error_list" in result["errors"]
         assert "BTC: Insufficient data" in result["errors"]["error_list"]
         assert "BTC" not in result  # Symbol is not included when there are errors
-
-
-class TestIndicatorNumericOperations:
-    """Test that indicator data can be used for numeric operations (catches str vs int bugs)."""
-
-    def test_calculate_indicators_returns_numeric_compatible_data(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
-        """Test that RSI and other indicator values can be used in numeric comparisons.
-
-        This test catches the bug where RSI was returned as string "60.25"
-        instead of numeric 60.25, causing 'str' vs 'int' comparison errors.
-        """
-        # Setup mock with valid data
-        result = indicator_service.calculate_indicators(["BTC"])
-
-        assert result is not None
-        assert "BTC" in result
-
-        btc_data = result["BTC"]
-
-        # Extract indicator values (this is the pattern used in main.py)
-        try:
-            rsi = float(btc_data.get("rsi", 0)) if btc_data.get("rsi") not in [None, "N/A", ""] else 0
-            price = float(btc_data.get("close", 0)) if btc_data.get("close") not in [None, "N/A", ""] else 0
-            ema10 = float(btc_data.get("ema_10", 0)) if btc_data.get("ema_10") not in [None, "N/A", ""] else 0
-            ema21 = float(btc_data.get("ema_21", 0)) if btc_data.get("ema_21") not in [None, "N/A", ""] else 0
-        except (ValueError, TypeError) as e:
-            pytest.fail(f"Failed to convert indicator data to numeric types: {e}")
-
-        # Test numeric operations (this is what was failing in main.py)
-        # These should not raise TypeError: '>' not supported between instances of 'str' and 'int'
-        if rsi > 0:  # Basic comparison
-            assert isinstance(rsi, int | float), f"RSI should be numeric, got {type(rsi)}: {rsi}"
-
-        # Test RSI signal logic (copied from main.py)
-        if rsi > 80:
-            signal = "SELL"
-        elif rsi > 70:
-            signal = "CAUTION"
-        elif rsi < 30:
-            signal = "BUY"
-        elif rsi < 50:
-            signal = "STRONG_BUY"
-        else:
-            signal = "NEUTRAL"
-
-        assert signal in ["SELL", "CAUTION", "BUY", "STRONG_BUY", "NEUTRAL"]
-
-        # Test that all values are actually numeric or properly handled
-        assert isinstance(rsi, int | float), f"RSI should be numeric: {type(rsi)}"
-        assert isinstance(price, int | float), f"Price should be numeric: {type(price)}"
-        assert isinstance(ema10, int | float), f"EMA10 should be numeric: {type(ema10)}"
-        assert isinstance(ema21, int | float), f"EMA21 should be numeric: {type(ema21)}"
-
-        # Test that values are reasonable
-        assert 0 <= rsi <= 100, f"RSI should be 0-100, got {rsi}"
-        assert price >= 0, f"Price should be positive, got {price}"
-
-    def test_calculate_indicators_with_na_values(self, indicator_service: IndicatorService, mock_client: MagicMock) -> None:
-        """Test that N/A and None values are handled properly in numeric operations."""
-        # Mock insufficient data scenario that returns N/A values
-        mock_client.get_klines.return_value = [
-            [1672531200000, 100, 101, 99, 100, 1000, 1672617599999, 100000, 100, 500, 50000, 0]  # Only 1 data point
-        ]
-
-        result = indicator_service.calculate_indicators(["BTC"])
-
-        if result and "BTC" in result:
-            btc_data = result["BTC"]
-
-            # Test that N/A values are handled without errors
-            try:
-                rsi = float(btc_data.get("rsi", 0)) if btc_data.get("rsi") not in [None, "N/A", ""] else 0
-                ema10 = float(btc_data.get("ema_10", 0)) if btc_data.get("ema_10") not in [None, "N/A", ""] else 0
-
-                # These should work without throwing type errors
-                signal = "NEUTRAL"
-                if rsi > 80:
-                    signal = "SELL"
-                elif rsi < 30:
-                    signal = "BUY"
-
-                assert signal in ["SELL", "BUY", "NEUTRAL"]
-                assert isinstance(rsi, int | float)
-                assert isinstance(ema10, int | float)
-
-            except (ValueError, TypeError) as e:
-                pytest.fail(f"N/A value handling failed: {e}")

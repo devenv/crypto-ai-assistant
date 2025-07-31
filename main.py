@@ -811,25 +811,26 @@ Asset Holdings:
     config = get_app_config()
     indicator_service = IndicatorService(get_client(), config)
 
-    # Extract major coin holdings (>5% of portfolio)
-    major_coins: list[str] = []
+    # Extract ALL coin holdings (not just major ones)
+    all_coins: list[str] = []
     for balance in balances:
-        percentage = (balance["value_usdt"] / total_portfolio_value) * 100
-        if percentage > 5.0 and balance["asset"] != "USDT":
-            major_coins.append(balance["asset"])
+        if balance["asset"] != "USDT" and balance["value_usdt"] > 1.0:  # Include all positions above $1.00
+            all_coins.append(balance["asset"])
 
-    console.print(f"🔍 [cyan]Analyzing technical indicators for major holdings: {', '.join(major_coins)}[/cyan]")
+    # If in strategy mode, analyze ALL coins as per crypto-workflow.md
+    # If in monitoring mode, also analyze ALL coins as per crypto-monitoring-workflow.md
+    console.print(f"🔍 [cyan]Analyzing technical indicators for ALL portfolio positions: {', '.join(all_coins)}[/cyan]")
 
-    # Get and display indicators for major holdings
+    # Get and display indicators for ALL portfolio positions
     market_data = "Technical Indicators:\n"
     try:
         # Use calculate_indicators method which works properly for EMAs (fixes $0.00 display issue)
-        indicators = indicator_service.calculate_indicators(major_coins)
+        indicators = indicator_service.calculate_indicators(all_coins)
 
         if indicators:
             console.print("\n📊 [bold]TECHNICAL ANALYSIS[/bold]")
 
-            tech_table = Table(title="Technical Indicators (Major Holdings)")
+            tech_table = Table(title="Technical Indicators (All Portfolio Positions)")
             tech_table.add_column("Asset", style="cyan", no_wrap=True)
             tech_table.add_column("Price", style="green", justify="right")
             tech_table.add_column("RSI", style="yellow", justify="center")
@@ -837,20 +838,25 @@ Asset Holdings:
             tech_table.add_column("EMA21", style="purple", justify="right")
             tech_table.add_column("Signal", style="magenta", justify="center")
 
+            # Process indicators data for display
+
             for coin, data in indicators.items():
                 # Skip entries with errors from calculate_indicators
                 if "error" in data:
                     continue
 
-                # Convert string values to float for numeric operations (fix for str vs int comparison)
-                try:
-                    rsi = float(data.get("rsi", 0)) if data.get("rsi") not in [None, "N/A", ""] else 0
-                    price = float(data.get("close", 0)) if data.get("close") not in [None, "N/A", ""] else 0  # Use 'close' from display format
-                    ema10 = float(data.get("ema_10", 0)) if data.get("ema_10") not in [None, "N/A", ""] else 0
-                    ema21 = float(data.get("ema_21", 0)) if data.get("ema_21") not in [None, "N/A", ""] else 0
-                except (ValueError, TypeError):
-                    # If conversion fails, skip this entry
-                    continue
+                # Safely convert values to float
+                def safe_float(value, default=0.0):
+                    try:
+                        return float(value) if value is not None else default
+                    except (ValueError, TypeError):
+                        return default
+
+                # Use the correct field names based on what's available
+                rsi = safe_float(data.get("rsi", data.get("RSI", 0)))
+                price = safe_float(data.get("current_price", data.get("close", data.get("Close", 0))))
+                ema10 = safe_float(data.get("ema10", data.get("ema_10", data.get("EMA_10", 0))))
+                ema21 = safe_float(data.get("ema21", data.get("ema_21", data.get("EMA_21", 0))))
 
                 # Determine signal based on RSI
                 if rsi > 80:
@@ -874,15 +880,18 @@ Asset Holdings:
                 if "error" in data:
                     continue
 
-                # Get values from calculate_indicators format (with type conversion)
-                try:
-                    price = float(data.get("close", 0)) if data.get("close") not in [None, "N/A", ""] else 0
-                    rsi = float(data.get("rsi", 0)) if data.get("rsi") not in [None, "N/A", ""] else 0
-                    ema10 = float(data.get("ema_10", 0)) if data.get("ema_10") not in [None, "N/A", ""] else 0
-                    ema21 = float(data.get("ema_21", 0)) if data.get("ema_21") not in [None, "N/A", ""] else 0
-                except (ValueError, TypeError):
-                    # Skip entries with conversion errors
-                    continue
+                # Get values from calculate_indicators format using the safe_float function
+                def safe_float(value, default=0.0):
+                    try:
+                        return float(value) if value is not None else default
+                    except (ValueError, TypeError):
+                        return default
+
+                # Use the correct field names based on what's available
+                price = safe_float(data.get("current_price", data.get("close", data.get("Close", 0))))
+                rsi = safe_float(data.get("rsi", data.get("RSI", 0)))
+                ema10 = safe_float(data.get("ema10", data.get("ema_10", data.get("EMA_10", 0))))
+                ema21 = safe_float(data.get("ema21", data.get("ema_21", data.get("EMA_21", 0))))
 
                 market_data += f"- {coin}: Price ${price:,.2f}, RSI {rsi:.1f}, EMA10 ${ema10:,.2f}, EMA21 ${ema21:,.2f}\n"
         else:
@@ -1120,15 +1129,11 @@ def analyze_market_timing() -> None:
                 if "error" in data:
                     continue
 
-                # Get values from calculate_indicators format (with type conversion)
-                try:
-                    price = float(data.get("close", 0)) if data.get("close") not in [None, "N/A", ""] else 0
-                    rsi = float(data.get("rsi", 0)) if data.get("rsi") not in [None, "N/A", ""] else 0
-                    ema10 = float(data.get("ema_10", 0)) if data.get("ema_10") not in [None, "N/A", ""] else 0
-                    ema21 = float(data.get("ema_21", 0)) if data.get("ema_21") not in [None, "N/A", ""] else 0
-                except (ValueError, TypeError):
-                    # Skip entries with conversion errors
-                    continue
+                # Get values from calculate_indicators format
+                price = data.get("current_price", 0)
+                rsi = data.get("rsi", 0)
+                ema10 = data.get("ema10", 0)
+                ema21 = data.get("ema21", 0)
 
                 market_data += f"- {coin}: Price ${price:,.2f}, RSI {rsi:.1f}, EMA10 ${ema10:,.2f}, EMA21 ${ema21:,.2f}\n"
         else:

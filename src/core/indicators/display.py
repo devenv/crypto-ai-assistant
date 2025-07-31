@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pandas as pd
 from pandas import DataFrame
 from rich.console import Console
 from rich.table import Table
@@ -39,17 +40,31 @@ class IndicatorDisplay:
         if not support_str:
             support_str = "None"
 
+        # Helper function to safely format values
+        def safe_format(value, decimal_places=2, use_commas=False):
+            if isinstance(value, int | float):
+                format_str = f"{{:,.{decimal_places}f}}" if use_commas else f"{{:.{decimal_places}f}}"
+                return format_str.format(value)
+            return "N/A"
+
+        # Get values with proper type handling
+        def get_value(column, default=0):
+            if column in cols:
+                val = last[column]
+                return val if not pd.isna(val) else default
+            return default
+
         return {
             "symbol": symbol_pair,
-            "close": f"{last['Close'] if 'Close' in cols else 0:.2f}",
-            "rsi": f"{last['RSI'] if 'RSI' in cols else 0:.2f}" if "RSI" in cols else "N/A",
-            "ema_10": f"{last['EMA_10'] if 'EMA_10' in cols else 0:.2f}" if "EMA_10" in cols else "N/A",
-            "ema_21": f"{last['EMA_21'] if 'EMA_21' in cols else 0:.2f}" if "EMA_21" in cols else "N/A",
-            "ema_50": f"{last['EMA_50'] if 'EMA_50' in cols else 0:.2f}" if "EMA_50" in cols else "N/A",
-            "macd_line": f"{last['MACD_Line'] if 'MACD_Line' in cols else 0:.4f}" if "MACD_Line" in cols else "N/A",
-            "signal_line": f"{last['Signal_Line'] if 'Signal_Line' in cols else 0:.4f}" if "Signal_Line" in cols else "N/A",
-            "macd_histogram": f"{last['MACD_Histogram'] if 'MACD_Histogram' in cols else 0:.4f}" if "MACD_Histogram" in cols else "N/A",
-            "volume": f"{last['Volume'] if 'Volume' in cols else 0:,.2f}",
+            "close": safe_format(get_value("Close")),
+            "rsi": safe_format(get_value("RSI")) if "RSI" in cols else "N/A",
+            "ema_10": safe_format(get_value("EMA_10")) if "EMA_10" in cols else "N/A",
+            "ema_21": safe_format(get_value("EMA_21")) if "EMA_21" in cols else "N/A",
+            "ema_50": safe_format(get_value("EMA_50")) if "EMA_50" in cols else "N/A",
+            "macd_line": safe_format(get_value("MACD_Line"), 4) if "MACD_Line" in cols else "N/A",
+            "signal_line": safe_format(get_value("Signal_Line"), 4) if "Signal_Line" in cols else "N/A",
+            "macd_histogram": safe_format(get_value("MACD_Histogram"), 4) if "MACD_Histogram" in cols else "N/A",
+            "volume": safe_format(get_value("Volume"), 2, True),
             "support_levels": support_str,
         }
 
