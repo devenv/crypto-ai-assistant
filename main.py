@@ -987,6 +987,29 @@ Asset Holdings:
             # Display synthesis analysis (primary result)
             analysis_result = parallel_result.primary_analysis
 
+            # Enhanced quality validation using meta-learning criteria
+            from core.ai_integration import validate_and_enhance_analysis
+
+            portfolio_dict = {"balances": balances}  # Convert for validation
+            quality_assessment, validation_results = validate_and_enhance_analysis(analysis_result, portfolio_dict, min_quality_threshold=80)
+
+            # Display enhanced quality metrics for parallel analysis
+            console.print(f"\n📊 [bold]Enhanced Quality Assessment: {validation_results['score'].total}/100 - {quality_assessment}[/bold]")
+            console.print(
+                f"🎯 Breakdown: Macro {validation_results['breakdown']['macro_intelligence']}/20, "
+                f"Risk {validation_results['breakdown']['concentration_risk']}/20, "
+                f"Technical {validation_results['breakdown']['technical_analysis']}/20, "
+                f"Management {validation_results['breakdown']['risk_management']}/20, "
+                f"Actionable {validation_results['breakdown']['actionability']}/20"
+            )
+
+            if not validation_results["meets_threshold"]:
+                console.print("⚠️ [yellow]Analysis below enhanced quality threshold (80). Suggestions:[/yellow]")
+                for suggestion in validation_results["suggestions"]:
+                    console.print(f"   • {suggestion}")
+            else:
+                console.print("✅ [green]Analysis meets enhanced quality standards from meta-learning![/green]")
+
             console.print("\n" + "=" * 80)
             console.print("🎯 [bold]PERPLEXITY STRATEGIC ANALYSIS (SYNTHESIS & CRITIQUE)[/bold]")
             console.print("=" * 80)
@@ -1044,6 +1067,30 @@ Asset Holdings:
                 raise typer.Exit(1)
 
             console.print("✅ [green]Strategic analysis passed quality validation![/green]")
+
+            # Enhanced quality validation using meta-learning criteria
+            from core.ai_integration import validate_and_enhance_analysis
+
+            portfolio_dict = {"balances": balances}  # Convert for validation
+            quality_assessment, validation_results = validate_and_enhance_analysis(analysis_result, portfolio_dict, min_quality_threshold=80)
+
+            # Display enhanced quality metrics
+            console.print(f"\n📊 [bold]Enhanced Quality Assessment: {validation_results['score'].total}/100 - {quality_assessment}[/bold]")
+            console.print(
+                f"🎯 Breakdown: Macro {validation_results['breakdown']['macro_intelligence']}/20, "
+                f"Risk {validation_results['breakdown']['concentration_risk']}/20, "
+                f"Technical {validation_results['breakdown']['technical_analysis']}/20, "
+                f"Management {validation_results['breakdown']['risk_management']}/20, "
+                f"Actionable {validation_results['breakdown']['actionability']}/20"
+            )
+
+            if not validation_results["meets_threshold"]:
+                console.print("⚠️ [yellow]Analysis below enhanced quality threshold (80). Suggestions:[/yellow]")
+                for suggestion in validation_results["suggestions"]:
+                    console.print(f"   • {suggestion}")
+            else:
+                console.print("✅ [green]Analysis meets enhanced quality standards from meta-learning![/green]")
+
             console.print("\n" + "=" * 80)
             console.print("🎯 [bold]PERPLEXITY STRATEGIC ANALYSIS[/bold]")
             console.print("=" * 80)

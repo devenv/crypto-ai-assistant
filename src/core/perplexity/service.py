@@ -322,10 +322,27 @@ class PerplexityService:
         return self._text_analyzer.calculate_consistency_score(recs_1, recs_2)
 
     def validate_perplexity_response_quality(self, response: str) -> dict[str, Any]:
-        """Validate the quality of a Perplexity response."""
+        """Validate the quality of a Perplexity response with graduated scoring."""
         is_valid, failure_reason = self._quality_validator.validate_perplexity_response_quality(response)
+
+        # Calculate graduated score based on response quality
+        score = 0.0
+        if not response:
+            score = 0.0
+        elif len(response) < 10:
+            score = 0.1  # Very poor quality
+        elif len(response) < 50:
+            score = 0.3  # Poor quality
+        elif len(response) < 200:
+            score = 0.6  # Moderate quality
+        elif is_valid:
+            score = 1.0  # High quality - meets all criteria
+        else:
+            # Partial quality - longer but missing some criteria
+            score = 0.8
+
         return {
             "is_valid": is_valid,
             "failure_reason": failure_reason if not is_valid else "",
-            "score": 1.0 if is_valid else 0.0,  # Simple scoring for backward compatibility
+            "score": score,
         }

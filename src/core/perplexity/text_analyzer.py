@@ -78,6 +78,10 @@ class TextAnalyzer:
         if not analysis_1 or not analysis_2:
             return 0.0
 
+        # Special case: identical text should return perfect score
+        if analysis_1.strip() == analysis_2.strip():
+            return 100.0
+
         # Convert to lowercase for comparison
         text_1 = analysis_1.lower()
         text_2 = analysis_2.lower()
@@ -196,37 +200,65 @@ class TextAnalyzer:
         if (high_risk_1 and low_risk_2) or (low_risk_1 and high_risk_2):
             discrepancies.append("Risk assessment: Conflicting risk environment evaluation")
 
+        # Check for conflicting price direction predictions
+        up_indicators_1 = any(term in text_1 for term in ["go up", "will rise", "increase", "pump", "moon"])
+        down_indicators_1 = any(term in text_1 for term in ["drop", "will fall", "decrease", "dump", "crash"])
+
+        up_indicators_2 = any(term in text_2 for term in ["go up", "will rise", "increase", "pump", "moon"])
+        down_indicators_2 = any(term in text_2 for term in ["drop", "will fall", "decrease", "dump", "crash"])
+
+        if (up_indicators_1 and down_indicators_2) or (down_indicators_1 and up_indicators_2):
+            discrepancies.append("Price direction: Conflicting up/down price predictions")
+
         return discrepancies
 
     def _get_asset_sentiment(self, text: str, asset_short: str, asset_long: str) -> str | None:
         """Get sentiment for a specific asset from text."""
-        asset_section = ""
+        words = text.split()
+        sentiment_scores = {"bullish": 0.0, "bearish": 0.0, "neutral": 0.0}
 
-        # Try to find sections mentioning the asset
-        for word in text.split():
+        # Find asset mentions and analyze sentiment with directional and proximity weighting
+        for i, word in enumerate(words):
             if asset_short in word or asset_long in word:
-                # Get surrounding context (5 words before and after)
-                words = text.split()
-                try:
-                    idx = words.index(word)
-                    start = max(0, idx - 5)
-                    end = min(len(words), idx + 6)
-                    asset_section += " " + " ".join(words[start:end])
-                except ValueError:
-                    continue
+                # Check words after the asset mention (more likely to describe it)
+                after_start = i + 1
+                after_end = min(len(words), i + 6)
+                after_context = words[after_start:after_end]
 
-        if not asset_section:
+                # Check words before the asset mention (less weight)
+                before_start = max(0, i - 3)
+                before_end = i
+                before_context = words[before_start:before_end]
+
+                # Score sentiment after asset mention (higher weight)
+                for j, context_word in enumerate(after_context):
+                    proximity_weight = 1.0 / (j + 1)  # Closer after = higher weight
+                    context_lower = context_word.lower().strip(".,!?:;")
+
+                    if any(term in context_lower for term in ["buy", "accumulate", "bullish", "opportunity"]):
+                        sentiment_scores["bullish"] += proximity_weight
+                    elif any(term in context_lower for term in ["sell", "sold", "reduce", "bearish", "risk"]):
+                        sentiment_scores["bearish"] += proximity_weight
+                    elif any(term in context_lower for term in ["hold", "neutral", "wait"]):
+                        sentiment_scores["neutral"] += proximity_weight
+
+                # Score sentiment before asset mention (lower weight)
+                for j, context_word in enumerate(reversed(before_context)):
+                    proximity_weight = 0.3 / (j + 1)  # Lower weight for words before
+                    context_lower = context_word.lower().strip(".,!?:;")
+
+                    if any(term in context_lower for term in ["buy", "accumulate", "bullish", "opportunity"]):
+                        sentiment_scores["bullish"] += proximity_weight
+                    elif any(term in context_lower for term in ["sell", "sold", "reduce", "bearish", "risk"]):
+                        sentiment_scores["bearish"] += proximity_weight
+                    elif any(term in context_lower for term in ["hold", "neutral", "wait"]):
+                        sentiment_scores["neutral"] += proximity_weight
+
+        # Return sentiment with highest score, or None if no sentiment found
+        if max(sentiment_scores.values()) == 0:
             return None
 
-        # Analyze sentiment in the asset context
-        if any(term in asset_section for term in ["buy", "accumulate", "bullish", "opportunity"]):
-            return "bullish"
-        elif any(term in asset_section for term in ["sell", "reduce", "bearish", "risk"]):
-            return "bearish"
-        elif any(term in asset_section for term in ["hold", "neutral", "wait"]):
-            return "neutral"
-        else:
-            return None
+        return max(sentiment_scores.items(), key=lambda x: x[1])[0]
 
     def identify_three_way_discrepancies(self, analysis_institutional: str, analysis_sentiment: str, analysis_synthesis: str) -> list[str]:
         """

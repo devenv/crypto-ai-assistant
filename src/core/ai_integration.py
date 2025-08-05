@@ -221,3 +221,44 @@ def generate_comprehensive_ai_context(
         "risk_context": generate_risk_context(),
         "recent_activity_context": generate_recent_activity_context(account_service),
     }
+
+
+def validate_and_enhance_analysis(
+    analysis_text: str, portfolio_data: dict[str, Any] | None = None, min_quality_threshold: int = 80
+) -> tuple[str, dict[str, Any]]:
+    """Validate AI analysis quality and provide enhancement suggestions.
+
+    Args:
+        analysis_text: AI analysis response to validate
+        portfolio_data: Optional portfolio data for context validation
+        min_quality_threshold: Minimum acceptable quality score (0-100)
+
+    Returns:
+        Tuple of (quality_assessment, validation_results)
+    """
+    from .ai_quality_validator import AIQualityValidator
+
+    # Validate analysis quality
+    quality_score = AIQualityValidator.validate_analysis(analysis_text, portfolio_data)
+    quality_assessment = AIQualityValidator.get_quality_assessment(quality_score)
+
+    # Get improvement suggestions if below threshold
+    suggestions = []
+    if quality_score.total < min_quality_threshold:
+        suggestions = AIQualityValidator.get_improvement_suggestions(quality_score)
+
+    validation_results = {
+        "score": quality_score,
+        "assessment": quality_assessment,
+        "meets_threshold": quality_score.total >= min_quality_threshold,
+        "suggestions": suggestions,
+        "breakdown": {
+            "macro_intelligence": quality_score.macro_intelligence,
+            "concentration_risk": quality_score.concentration_risk,
+            "technical_analysis": quality_score.technical_analysis,
+            "risk_management": quality_score.risk_management,
+            "actionability": quality_score.actionability,
+        },
+    }
+
+    return quality_assessment, validation_results

@@ -152,6 +152,24 @@ You will receive comprehensive market analysis covering multiple perspectives. Y
 - Performing precision calculations or validation
 - Providing specific order commands or exact trade instructions
 
+🚨 MANDATORY MACRO INTELLIGENCE (CRITICAL FOUNDATION):
+1. **Fear & Greed Index**: Research current Crypto Fear & Greed Index level and interpretation
+2. **Institutional Flows**: Analyze recent institutional fund flows, ETF activity, and whale movements
+3. **Bitcoin Dominance**: Current Bitcoin dominance percentage and trend implications
+4. **Market Structure**: Altcoin Season Index, sector rotation patterns, and market cap flows
+
+📊 PORTFOLIO CONCENTRATION RISK ASSESSMENT (PRIORITY 1):
+- **CRITICAL**: Check for any asset allocation >40% of total portfolio value
+- **FLAG VIOLATIONS**: Explicitly identify concentration risk issues requiring rebalancing
+- **RISK MANAGEMENT**: Address concentration concerns before opportunity identification
+- **COMPLIANCE**: Ensure recommendations respect 40% maximum allocation guideline
+
+🎯 COMPREHENSIVE TECHNICAL ANALYSIS REQUIREMENTS:
+- **MINIMUM COVERAGE**: Analyze at least 7 major altcoins (ETH, LINK, DOT, ADA, AVAX, UNI, XRP)
+- **SPECIFIC LEVELS**: Provide exact support and resistance levels with confluence factors
+- **BREAKOUT TRIGGERS**: Identify precise breakout levels and volume confirmation requirements
+- **RISK/REWARD**: Calculate specific stop-loss and target levels for each opportunity
+
 STRATEGIC ANALYSIS REQUIREMENTS:
 1. **Market Sentiment Analysis**: Research current market mood and sentiment drivers
 2. **News & Events Impact**: Analyze recent developments affecting market direction
@@ -171,10 +189,14 @@ EFFECTIVE BALANCE UNDERSTANDING:
 - Low available balance for an asset often means GOOD protection exists
 - Focus deployment recommendations on truly available funds only
 
-OUTPUT FORMAT:
-Provide strategic analysis in clear sections WITHOUT any structured formatting:
+🎯 RISK-FIRST ANALYSIS OUTPUT FORMAT:
+Provide strategic analysis in clear sections prioritizing risk management:
 
-**EXECUTIVE SUMMARY**: Key strategic insights and immediate priorities
+**MACRO FOUNDATION**: Fear & Greed Index, institutional flows, Bitcoin dominance analysis
+
+**PORTFOLIO RISK ASSESSMENT**: Concentration risk evaluation, allocation compliance review
+
+**COMPREHENSIVE TECHNICAL ANALYSIS**: 7+ major altcoins with specific support/resistance levels
 
 **MARKET SENTIMENT & REGIME**: Current market mood, cycle phase, sentiment drivers
 
@@ -182,19 +204,25 @@ Provide strategic analysis in clear sections WITHOUT any structured formatting:
 
 **SECTOR ROTATION INSIGHTS**: Which crypto sectors show strength/weakness patterns
 
-**STRATEGIC POSITIONING GUIDANCE**: Risk environment assessment and positioning advice
+**RISK MANAGEMENT PRIORITIES**: Address concentration violations and protection gaps first
 
-**PROTECTION ADEQUACY REVIEW**: Analysis of existing protection based on current conditions
-
-**STRATEGIC OPPORTUNITIES**: Key insights for portfolio positioning
+**STRATEGIC OPPORTUNITIES**: Conservative deployment recommendations respecting risk limits
 
 **TIMING CONSIDERATIONS**: Optimal timing for any position adjustments
 
-**RISK ENVIRONMENT**: Current risk factors and defensive considerations
+**DEPLOYMENT CONSTRAINTS**: Position sizing limits and reserve requirements
 
 **FOLLOW-UP PRIORITIES**: Key developments to monitor
 
-Focus on strategic insights and market intelligence that inform decision-making. Provide comprehensive analysis in natural language without any structured output formatting."""
+📊 ANALYSIS QUALITY REQUIREMENTS:
+- Must include objective macro indicators (Fear & Greed, flows, dominance)
+- Must identify portfolio concentration risks explicitly
+- Must provide specific technical levels for minimum 7 altcoins
+- Must prioritize risk management before opportunity identification
+- Must recommend conservative position sizing (≤5% new allocations per asset)
+- Must maintain 25-30% USDT reserves for opportunities and risk management
+
+Focus on risk-first strategic insights that prioritize portfolio protection and compliance with allocation guidelines."""
 
         system_prompt += common_framework
 

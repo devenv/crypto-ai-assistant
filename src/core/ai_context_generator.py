@@ -52,13 +52,30 @@ class AIContextGenerator:
         formatted_market = AIContextGenerator._format_market_data(market_data)
         formatted_orders = AIContextGenerator._format_order_data(order_data)
 
-        # Combine all context sections
+        # Generate portfolio concentration risk analysis
+        concentration_analysis = AIContextGenerator._generate_concentration_risk_analysis(portfolio_data)
+
+        # Combine all context sections with enhanced risk-first approach
         context = f"""
+🚨 PORTFOLIO CONCENTRATION RISK ANALYSIS (PRIORITY 1):
+{concentration_analysis}
+
 🛡️ PROTECTION ANALYSIS (CRITICAL FOR RECOMMENDATIONS):
 {protection_analysis}
 
 💰 EFFECTIVE BALANCE ANALYSIS (PREVENT BALANCE CONFUSION):
 {balance_analysis}
+
+📊 MACRO INTELLIGENCE REQUIREMENTS:
+Research Required:
+- Current Crypto Fear & Greed Index level and interpretation
+- Recent institutional fund flows (ETF activity, whale movements)
+- Bitcoin dominance percentage and trend implications
+- Altcoin Season Index and market cap rotation patterns
+
+🎯 TECHNICAL ANALYSIS COVERAGE REQUIREMENTS:
+Mandatory Coverage: ETH, LINK, DOT, ADA, AVAX, UNI, XRP (minimum 7 altcoins)
+Required Elements: Specific support/resistance levels, breakout triggers, risk/reward ratios
 
 📊 STRATEGIC CONTEXT:
 {strategic_context}
@@ -72,22 +89,91 @@ class AIContextGenerator:
 📋 ACTIVE ORDERS:
 {formatted_orders}
 
-⚠️ AI GUIDANCE RULES:
-1. PROTECTION ASSESSMENT: Before recommending ANY protection orders, check the protection analysis above
-2. BALANCE INTERPRETATION: Use "Available" amounts for new positions, not total balance
-3. REDUNDANCY PREVENTION: Skip recommendations that conflict with existing excellent protection
-4. CONTEXT INTEGRATION: Consider all sections above when making strategic recommendations
-5. STRATEGIC ALIGNMENT: Ensure recommendations align with current strategy phase
+🚨 ENHANCED AI GUIDANCE RULES (RISK-FIRST APPROACH):
+1. CONCENTRATION RISK: Address any >40% allocation violations BEFORE opportunities
+2. MACRO FOUNDATION: Include Fear & Greed Index, institutional flows, Bitcoin dominance
+3. TECHNICAL PRECISION: Provide specific levels for minimum 7 major altcoins
+4. PROTECTION ASSESSMENT: Check protection scores before recommending protection
+5. BALANCE INTERPRETATION: Use "Available" amounts for new positions only
+6. POSITION SIZING: Limit new allocations to ≤5% per asset, maintain 25-30% USDT reserves
+7. RISK MANAGEMENT: Prioritize portfolio compliance and protection before deployment
 
-🎯 CONTEXT QUALITY METRICS:
+🎯 ENHANCED CONTEXT QUALITY METRICS:
+- Concentration Risk Analysis: AUTOMATED ✅
 - Protection Analysis: AUTOMATED ✅
 - Balance Analysis: AUTOMATED ✅
+- Macro Intelligence Requirements: SPECIFIED ✅
+- Technical Coverage Requirements: MANDATED ✅
+- Risk-First Guidance: IMPLEMENTED ✅
 - Strategic Context: ENHANCED ✅
 - Order Conflict Detection: ENABLED ✅
 - Redundancy Prevention: ACTIVE ✅
 """
 
         return context.strip()
+
+    @staticmethod
+    def _generate_concentration_risk_analysis(portfolio_data: dict[str, Any]) -> str:
+        """Generate concentration risk analysis for portfolio allocations.
+
+        Args:
+            portfolio_data: Portfolio holdings and allocations
+
+        Returns:
+            Formatted concentration risk analysis
+        """
+        try:
+            # Extract portfolio allocations if available
+            if "balances" in portfolio_data:
+                total_value = 0.0
+                asset_values = {}
+
+                # Calculate total portfolio value and individual asset values
+                for asset, balance_info in portfolio_data["balances"].items():
+                    if isinstance(balance_info, dict) and "free" in balance_info:
+                        # Get asset value (simplified - in real implementation would use current prices)
+                        asset_value = float(balance_info.get("value", 0))
+                        if asset_value > 0:
+                            asset_values[asset] = asset_value
+                            total_value += asset_value
+
+                # Analyze concentration risk
+                if total_value > 0:
+                    concentration_analysis = "PORTFOLIO CONCENTRATION ANALYSIS:\n"
+                    violations = []
+
+                    for asset, value in asset_values.items():
+                        allocation_pct = (value / total_value) * 100
+
+                        if allocation_pct > 40:
+                            violations.append(f"🚨 {asset}: {allocation_pct:.1f}% - EXCEEDS 40% MAXIMUM")
+                        elif allocation_pct > 30:
+                            concentration_analysis += f"⚠️ {asset}: {allocation_pct:.1f}% - Approaching concentration limit\n"
+                        elif allocation_pct > 10:
+                            concentration_analysis += f"✅ {asset}: {allocation_pct:.1f}% - Within guidelines\n"
+
+                    if violations:
+                        concentration_analysis += "\n🚨 CRITICAL CONCENTRATION VIOLATIONS:\n"
+                        for violation in violations:
+                            concentration_analysis += f"{violation}\n"
+                        concentration_analysis += "\n⚠️ IMMEDIATE ACTION REQUIRED: Reduce overweight positions to <40% allocation\n"
+                        concentration_analysis += "✅ STRATEGY: Use existing sell orders or gradual rebalancing to address violations\n"
+                    else:
+                        concentration_analysis += "\n✅ CONCENTRATION COMPLIANCE: All allocations within 40% guideline\n"
+
+                    return concentration_analysis
+
+            # Fallback if portfolio structure not recognized
+            return """CONCENTRATION RISK ANALYSIS:
+⚠️ Manual Review Required: Check for any asset allocation >40% of total portfolio
+🎯 Guideline: Maximum 40% allocation per asset to maintain diversification
+📊 Action: Flag any violations for immediate rebalancing attention"""
+
+        except Exception as e:
+            return f"""CONCENTRATION RISK ANALYSIS:
+⚠️ Analysis Error: {str(e)}
+🎯 Manual Check Required: Verify no asset exceeds 40% allocation
+📊 Risk Management: Address any concentration violations before new deployment"""
 
     @staticmethod
     def _generate_protection_analysis(portfolio_data: dict[str, Any], market_data: dict[str, Any], order_data: list[dict[str, Any]]) -> str:
