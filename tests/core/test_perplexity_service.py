@@ -54,7 +54,7 @@ class TestPerplexityServiceInitialization:
         service = PerplexityService(model="sonar-pro")
 
         assert service.model == "sonar-pro"
-        assert service.timeout == 300  # 5 minutes for sonar-pro
+        assert service.timeout == 1200  # 20 minutes for sonar-pro
 
     @patch.dict(os.environ, {"PERPLEXITY_API_KEY": "test_key"})
     def test_init_with_deep_research_model(self):
@@ -62,7 +62,7 @@ class TestPerplexityServiceInitialization:
         service = PerplexityService(model="sonar-deep-research")
 
         assert service.model == "sonar-deep-research"
-        assert service.timeout == 300  # 5 minutes for deep research
+        assert service.timeout == 1200  # 20 minutes for deep research
 
     def test_init_without_api_key_raises_error(self, monkeypatch):
         """Test that missing API key raises PerplexityAuthenticationError."""
@@ -453,8 +453,8 @@ class TestPerplexityServiceParallelAnalysis:
         result = service.generate_parallel_market_timing_analysis("market", "account")
 
         assert isinstance(result, ParallelAnalysisResult)
-        assert result.primary_response == "Market analysis"
-        assert 0 <= result.enhancement_score <= 100
+        assert result.primary_analysis == "Market analysis"
+        assert 0 <= result.consistency_score <= 100
 
 
 class TestPerplexityServiceTextAnalysis:

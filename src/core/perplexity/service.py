@@ -65,7 +65,7 @@ class PerplexityService:
 
         # Set appropriate timeout based on model complexity
         if model in ["sonar-pro", "sonar-large", "sonar-deep-research"]:  # Include legacy name for compatibility
-            self.timeout = 300  # 5 minutes for comprehensive analysis
+            self.timeout = 1200  # 20 minutes for comprehensive analysis
         else:
             self.timeout = 60  # 1 minute for quick monitoring
 
@@ -111,6 +111,19 @@ class PerplexityService:
 
         try:
             logger.debug(f"Making Perplexity API call (attempt {retry_count + 1}/{self.max_retries + 1})")
+
+            # Log the complete prompt being sent to Perplexity
+            print("\n" + "=" * 100)
+            print("🤖 PERPLEXITY PROMPT BEING SENT:")
+            print("=" * 100)
+            for i, message in enumerate(messages):
+                role_label = "🎯 SYSTEM PROMPT" if message["role"] == "system" else "👤 USER PROMPT"
+                print(f"\n{role_label} ({i + 1}/{len(messages)}):")
+                print("-" * 80)
+                print(message["content"])
+                print("-" * 80)
+            print("\n🔄 Sending to Perplexity AI...")
+            print("=" * 100 + "\n")
 
             response: requests.Response = requests.post(
                 self.base_url,

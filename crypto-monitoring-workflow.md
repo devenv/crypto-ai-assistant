@@ -36,6 +36,8 @@
 python main.py ai analyze-portfolio --mode monitoring
 ```
 
+**📋 PROMPT TRANSPARENCY**: The exact prompts being sent to Perplexity AI are now automatically displayed before each API call, allowing you to see the complete context and instructions being provided to the AI system.
+
 **📊 REALITY CHECK RESULTS:**
 - **Score ≥75?** ✅ Reality is healthy, focus on plan alignment
 - **Score 60-74?** 🟡 Some issues detected, prioritize corrections
@@ -238,6 +240,8 @@ python main.py account info
 # Enhanced market timing analysis for issue resolution:
 python main.py ai market-timing
 ```
+
+**📋 PROMPT TRANSPARENCY**: All AI commands now automatically display the complete prompts being sent to Perplexity, including system instructions and user context, providing full visibility into the AI analysis process.
 
 **Step 2: INTERPRETATION & ACTION**
 

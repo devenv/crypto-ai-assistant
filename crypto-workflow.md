@@ -118,6 +118,8 @@ Following the proven monitoring workflow pattern, strategic analysis now uses it
 python main.py ai analyze-portfolio --mode strategy
 ```
 
+**📋 PROMPT TRANSPARENCY**: The exact prompts being sent to Perplexity AI are now automatically displayed before each API call, allowing you to see the complete context and instructions being provided to the AI system.
+
 **Stage 1 Comprehensive Analysis Includes:**
 - 💰 Complete portfolio status with allocations and values
 - 📋 All active orders with IDs, types, and current status
@@ -152,6 +154,8 @@ Before Stage 2, explicitly identify what needs improvement:
 # Enhanced analysis targeting specific Stage 1 gaps:
 python main.py ai market-timing
 ```
+
+**📋 PROMPT TRANSPARENCY**: All AI commands now automatically display the complete prompts being sent to Perplexity, including system instructions and user context, providing full visibility into the AI analysis process.
 
 **Stage 2 Enhanced Analysis Focus:**
 - 🎯 **Targeted Gap Resolution**: Address specific gaps identified from Stage 1
