@@ -67,10 +67,10 @@ python main.py order place-limit SYMBOL SIDE QTY PRICE  # Place orders
 | Feature | This Workflow (Strategy Development) | Monitoring Workflow |
 |---------|--------------------------------------|---------------------|
 | **Purpose** | **New Strategy Development** | **Daily Portfolio Monitoring** |
-| **AI Model** | **sonar-deep-research** (comprehensive) | **sonar** (quick check) |
+| **AI Model** | **External AI (prompts provided)** | **sonar** (quick check) |
 | **Command** | `ai analyze-portfolio --mode strategy` | `ai analyze-portfolio --mode monitoring` |
 | **Use When** | Planning new strategies | Daily/weekly monitoring |
-| **Time** | More comprehensive | Quick check |
+| **Time** | Generates prompts for external AI | Quick automated check |
 
 ---
 
@@ -79,122 +79,124 @@ python main.py order place-limit SYMBOL SIDE QTY PRICE  # Place orders
 ### **🧠 ENHANCED AI ANALYSIS FRAMEWORK: ITERATIVE TWO-STAGE APPROACH**
 
 **🎯 STRATEGIC ANALYSIS EVOLUTION:**
-Following the proven monitoring workflow pattern, strategic analysis now uses iterative refinement for maximum precision and actionability.
+Strategic analysis now provides comprehensive prompts for external AI services, allowing you to use ChatGPT, Claude, or any preferred AI service for deep market research.
 
-**Stage 1: Comprehensive Strategic Analysis**
-- Comprehensive market analysis using sonar-deep-research model
-- Integrated institutional + sentiment perspectives with portfolio context
-- Technical indicators + portfolio data + market intelligence
-- **Output**: Initial strategic insights with quality score
-- **Threshold**: Score >75 = sufficient, Score <75 = trigger Stage 2
+**Stage 1: External AI Analysis (Prompt Generation)**
+- System generates comprehensive prompts with portfolio context
+- Integrated institutional + sentiment analysis framework provided
+- Technical indicators + portfolio data + market intelligence included
+- **Output**: Copy-paste prompts for external AI services
+- **Usage**: Paste prompts into ChatGPT, Claude, or preferred AI service
 
-**Stage 2: Strategic Refinement & Enhancement**
-- Targeted analysis using sonar-pro model addressing Stage 1 gaps
-- Enhanced market timing and regime analysis
-- Critique and validation of Stage 1 insights against reality
-- Specific gap resolution with improved actionable guidance
-- **Threshold**: Combined analysis >75 = execute, <75 = manual fallback
+**Stage 2: Analysis Evaluation & Enhancement (Optional)**
+- Evaluate external AI analysis quality and completeness
+- Identify gaps or areas needing additional research
+- Use additional prompts or manual analysis for missing elements
+- Combine insights from multiple AI services if needed
+- **Threshold**: Analysis quality >75 = proceed, <75 = additional research
 
-**⚠️ CRITICAL RULE: Always complete Stage 1, evaluate gaps, then decide if Stage 2 needed**
+**⚠️ CRITICAL RULE: Always use the generated prompts with external AI, then evaluate quality**
 
 **Enhanced Benefits:**
-- **Precision**: Stage 2 targets specific gaps identified in Stage 1
-- **Safety**: Two independent analyses reduce single-point-of-failure risk
-- **Actionability**: Stage 2 specifically addresses actionability gaps
-- **Reality Alignment**: Stage 2 validates insights against current portfolio state
+- **Flexibility**: Use any AI service (ChatGPT, Claude, Perplexity, etc.)
+- **Cost Control**: No automatic API costs, use your preferred service
+- **Quality Control**: Review and iterate with external AI as needed
+- **Transparency**: Full visibility into prompts and responses
 
 ### **Step 1: Enhanced Strategic Analysis (Iterative Two-Stage Process)**
 
-**🎯 ITERATIVE STRATEGIC ANALYSIS PRINCIPLE (CRITICAL):**
-- **Stage 1**: Comprehensive analysis provides initial strategic insights and identifies gaps
-- **Stage 2**: Targeted refinement addresses specific gaps from Stage 1 (only when needed)
-- **Gap Evaluation**: Explicit assessment of what Stage 1 missed or needs improvement
-- **Integration**: Combine both stages for final strategic recommendations
+**🎯 EXTERNAL AI STRATEGIC ANALYSIS PRINCIPLE (CRITICAL):**
+- **Stage 1**: Generate comprehensive prompts with portfolio context for external AI
+- **Stage 2**: Evaluate external AI analysis quality and iterate if needed
+- **Prompt Quality**: System provides institutional + sentiment analysis framework
+- **External Analysis**: Use generated prompts with ChatGPT, Claude, or preferred AI service
 - **Our System Role**: Exact prices, technical indicators, portfolio calculations, order data, balances, validation, execution
 
-**🔍 STAGE 1: COMPREHENSIVE STRATEGIC ANALYSIS**
+**🔍 STAGE 1: PROMPT GENERATION FOR EXTERNAL AI**
 ```bash
-# Initial comprehensive strategic analysis:
+# Generate comprehensive AI prompts for copy-paste to external services:
 python main.py ai analyze-portfolio --mode strategy
 ```
 
-**📋 PROMPT TRANSPARENCY**: The exact prompts being sent to Perplexity AI are now automatically displayed before each API call, allowing you to see the complete context and instructions being provided to the AI system.
+**📋 PROMPT OUTPUT**: The system automatically generates comprehensive system and user prompts that you can copy and paste into any external AI service (ChatGPT, Claude, Perplexity, etc.) for deep strategic analysis.
 
-**Stage 1 Comprehensive Analysis Includes:**
+**Stage 1 Prompt Generation Includes:**
 - 💰 Complete portfolio status with allocations and values
 - 📋 All active orders with IDs, types, and current status
 - 📊 Technical indicators (RSI, EMA, MACD) for ALL portfolio positions
-- 🏛️ **Institutional Intelligence**: ETF flows, regulatory developments, whale movements
-- 📱 **Sentiment Intelligence**: Social trends, community sentiment, on-chain metrics
-- 🔗 **Market Context**: Current regime, timing considerations, risk environment
-- 📝 **Strategic Recommendations**: Initial actionable guidance with rationale
+- 🏛️ **Institutional Intelligence Framework**: Guidance for ETF flows, regulatory analysis
+- 📱 **Sentiment Intelligence Framework**: Instructions for social trends, community sentiment
+- 🔗 **Market Context Framework**: Guidelines for regime analysis, timing considerations
+- 📝 **Strategic Requirements**: Specific analysis requirements and output format
 
-**📊 STAGE 1 QUALITY ASSESSMENT:**
-Evaluate comprehensive analysis for gaps and actionability:
+**📊 STAGE 1 EXTERNAL AI USAGE:**
+Use generated prompts with your preferred external AI service:
 
-**Quality Score Interpretation:**
-- ✅ **75-100**: High quality - proceed to Step 2.5 (Protection Assessment)
-- 🟡 **60-74**: Good but gaps identified - **TRIGGER STAGE 2**
-- 🚨 **<60**: Insufficient analysis - **MANDATORY STAGE 2**
+**AI Service Options:**
+- ✅ **ChatGPT**: Copy system prompt to custom instructions, user prompt to chat
+- ✅ **Claude**: Use prompts in conversation for comprehensive analysis
+- ✅ **Perplexity**: Paste prompts for research-backed strategic insights
+- ✅ **Other AI Services**: Any service that accepts system + user prompts
 
-**🔍 GAP IDENTIFICATION MATRIX:**
-Before Stage 2, explicitly identify what needs improvement:
+**🔍 EXTERNAL AI ANALYSIS EVALUATION:**
+After receiving analysis from external AI, evaluate quality and completeness:
 
-| Gap Type | Stage 1 Issue | Stage 2 Focus |
-|----------|---------------|---------------|
-| **Market Timing** | Vague timing guidance | Precise entry/exit timing analysis |
-| **Risk Assessment** | Generic risk mentions | Specific portfolio risk quantification |
-| **Conflicting Signals** | Technical vs sentiment discord | Resolution and priority ranking |
-| **Actionability** | Abstract recommendations | Concrete order specifications |
-| **Regime Clarity** | Unclear market phase | Explicit regime identification |
-| **Protection Gaps** | Missing protection analysis | Targeted protection recommendations |
+| Analysis Quality | External AI Response | Next Action |
+|------------------|---------------------|-------------|
+| **Market Timing** | Vague timing guidance | Ask follow-up questions for precise entry/exit timing |
+| **Risk Assessment** | Generic risk mentions | Request specific portfolio risk quantification |
+| **Conflicting Signals** | Technical vs sentiment discord | Ask AI to resolve and prioritize recommendations |
+| **Actionability** | Abstract recommendations | Request concrete order specifications and levels |
+| **Regime Clarity** | Unclear market phase | Ask for explicit regime identification |
+| **Protection Gaps** | Missing protection analysis | Request targeted protection recommendations |
 
-**🎯 STAGE 2: STRATEGIC REFINEMENT & ENHANCEMENT (When Triggered)**
-```bash
-# Enhanced analysis targeting specific Stage 1 gaps:
-python main.py ai market-timing
-```
+**🎯 STAGE 2: EXTERNAL AI REFINEMENT (When Needed)**
+If initial analysis lacks quality, use follow-up prompts with external AI:
 
-**📋 PROMPT TRANSPARENCY**: All AI commands now automatically display the complete prompts being sent to Perplexity, including system instructions and user context, providing full visibility into the AI analysis process.
+**Follow-up Prompt Examples:**
+- "Provide specific entry and exit levels for the opportunities you mentioned"
+- "Quantify the portfolio concentration risk you identified with specific percentages"
+- "Resolve the conflicting signals between technical and sentiment analysis"
+- "Give concrete order specifications (price levels, quantities) for your recommendations"
 
-**Stage 2 Enhanced Analysis Focus:**
-- 🎯 **Targeted Gap Resolution**: Address specific gaps identified from Stage 1
-- ⏰ **Market Timing Precision**: Enhanced timing analysis for optimal entry/exit
-- 🔍 **Reality Validation**: Validate Stage 1 insights against current portfolio state
-- ⚖️ **Priority Ranking**: Clear prioritization of competing recommendations
-- 📈 **Regime Analysis**: Explicit market regime identification and implications
-- 🛡️ **Protection Strategy**: Targeted protection recommendations with specifics
+**Stage 2 External AI Refinement Focus:**
+- 🎯 **Targeted Gap Resolution**: Address specific gaps identified from initial analysis
+- ⏰ **Market Timing Precision**: Request enhanced timing analysis for optimal entry/exit
+- 🔍 **Reality Validation**: Ask AI to validate insights against current portfolio state
+- ⚖️ **Priority Ranking**: Request clear prioritization of competing recommendations
+- 📈 **Regime Analysis**: Ask for explicit market regime identification and implications
+- 🛡️ **Protection Strategy**: Request targeted protection recommendations with specifics
 
-**🔄 STAGE INTEGRATION PROTOCOL:**
-After Stage 2 completion, integrate both analyses:
+**🔄 EXTERNAL AI ANALYSIS INTEGRATION:**
+After receiving comprehensive analysis from external AI:
 
-1. **Compare Insights**: Stage 1 vs Stage 2 alignment and differences
-2. **Resolve Conflicts**: When stages disagree, prioritize Stage 2 (more targeted)
-3. **Combine Strengths**: Use Stage 1 breadth + Stage 2 precision
-4. **Final Quality Score**: Assess combined analysis quality
-5. **Decision Threshold**: Combined score >75 = proceed, <75 = manual fallback
+1. **Quality Assessment**: Evaluate analysis completeness and actionability (>75 = good)
+2. **Gap Resolution**: Use follow-up prompts if key areas are missing or unclear
+3. **Cross-Validation**: Optionally use multiple AI services for comparison
+4. **Final Analysis**: Combine insights from all interactions for complete picture
+5. **Decision Readiness**: Ensure analysis provides clear, actionable guidance
 
-**📊 INTEGRATED ANALYSIS OUTPUT:**
-- **Primary**: Stage 2 enhanced insights (most actionable)
-- **Context**: Stage 1 comprehensive background (broader perspective)
-- **Gaps Resolved**: Explicit documentation of what Stage 2 improved
-- **Final Confidence**: Combined confidence score for execution decisions
+**📊 FINAL ANALYSIS PACKAGE:**
+- **Primary Analysis**: Main strategic insights from external AI
+- **Refinements**: Any follow-up clarifications or additional details
+- **Quality Score**: Self-assessed completeness and actionability rating
+- **Action Plan**: Clear next steps derived from AI analysis
 
-### **Step 2: Strategic Analysis Evaluation & Enhancement Decision**
+### **Step 2: External AI Analysis Evaluation & Enhancement Decision**
 
-**📊 STAGE 1 ANALYSIS EVALUATION**
-Review comprehensive analysis results systematically:
+**📊 EXTERNAL AI ANALYSIS EVALUATION**
+Review external AI analysis results systematically:
 
-1. **Data Completeness**: Verify portfolio, orders, and technical data are current
+1. **Data Integration**: Verify AI used provided portfolio, orders, and technical data effectively
 2. **Strategic Clarity**: Assess clarity of market regime and timing guidance
 3. **Actionability**: Evaluate specificity of recommendations and execution guidance
-4. **Gap Identification**: Identify areas needing further analysis or clarification
+4. **Gap Identification**: Identify areas needing follow-up questions or clarification
 5. **Quality Score**: Assess overall analysis quality and confidence level
 
-**🔍 STAGE 1 QUALITY ASSESSMENT PROTOCOL:**
+**🔍 EXTERNAL AI QUALITY ASSESSMENT PROTOCOL:**
 - ✅ **75-100**: High quality - proceed directly to Step 2.5 (Protection Assessment)
-- 🟡 **60-74**: Good with gaps - **TRIGGER STAGE 2** for targeted enhancement
-- 🚨 **<60**: Insufficient - **MANDATORY STAGE 2** for comprehensive improvement
+- 🟡 **60-74**: Good with gaps - **USE FOLLOW-UP PROMPTS** for targeted enhancement
+- 🚨 **<60**: Insufficient - **TRY DIFFERENT AI SERVICE** or use manual analysis
 
 **📋 GAP ANALYSIS BEFORE STAGE 2:**
 When Stage 1 scores <75, identify specific improvement areas:
@@ -821,7 +823,8 @@ python main.py order cancel oco SYMBOL LIST_ID            # Cancel OCO order
 ### **Analysis & AI**
 ```bash
 python main.py analysis indicators --coins COIN_LIST      # Technical indicators
-python main.py ai analyze-portfolio --mode strategy       # Deep AI analysis
+python main.py ai analyze-portfolio --mode strategy       # Generate prompts for external AI
+python main.py ai analyze-portfolio --mode monitoring     # Quick monitoring analysis
 python main.py ai market-timing                          # Market timing analysis
 ```
 
@@ -834,6 +837,6 @@ python main.py validate balance-check ASSET               # Check available bala
 
 ---
 
-**🎯 KEY PRINCIPLE:** This workflow prioritizes systematic strategy development with comprehensive analysis of ALL portfolio positions above $1.00. Never skip smaller positions - they provide crucial market signals and can indicate broader market movements. For daily monitoring, use `crypto-monitoring-workflow.md` which focuses on quick health checks and actionable issues only.
+**🎯 KEY PRINCIPLE:** This workflow prioritizes systematic strategy development with comprehensive analysis of ALL portfolio positions above $1.00. Strategy mode now generates comprehensive prompts for external AI services (ChatGPT, Claude, Perplexity, etc.) rather than making automatic API calls. This provides cost control, service flexibility, and complete transparency. For daily monitoring, use `crypto-monitoring-workflow.md` which focuses on quick health checks and actionable issues only.
 
 **🔄 RESILIENCE:** If any command fails or gets interrupted, retry the command as needed to complete each workflow step fully before proceeding to the next step. Complete workflow integrity is essential for strategic success.

@@ -133,6 +133,213 @@ def get_app_config() -> AppConfig:
     return cast(AppConfig, config)
 
 
+def _get_current_timestamp() -> str:
+    """Get current UTC timestamp for AI prompts."""
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _print_strategy_prompts(
+    portfolio_data: str,
+    market_data: str,
+    order_data: str,
+    protection_analysis: str | None = None,
+    balance_analysis: str | None = None,
+    risk_context: str | None = None,
+    recent_activity_context: str | None = None,
+) -> None:
+    """Generate and print strategy analysis prompts for external AI services."""
+
+    # Generate comprehensive system prompt
+    system_prompt = """You are an expert crypto portfolio strategist with COMPREHENSIVE MARKET INTELLIGENCE capabilities. Analyze from both institutional and community perspectives to provide balanced, multi-dimensional market insights.
+
+🎯 YOUR COMPREHENSIVE ANALYSIS ROLE:
+- Integrate institutional flows with grassroots sentiment analysis
+- Balance professional research with community-driven market dynamics
+- Synthesize regulatory developments with social adoption patterns
+- Combine exchange data with on-chain metrics and social sentiment
+- Provide strategic reasoning from multiple market perspectives
+
+🔍 MULTI-PERSPECTIVE SOURCE FOCUS:
+**INSTITUTIONAL & PROFESSIONAL:**
+- Bloomberg, Reuters, institutional research reports
+- ETF flows, corporate treasury activities, regulatory developments
+- Professional trader sentiment and whale movement analysis
+
+**COMMUNITY & SENTIMENT:**
+- Twitter/X crypto sentiment, Reddit discussions
+- On-chain analytics, social sentiment tracking
+- Grassroots adoption metrics and viral market narratives
+
+ANALYSIS APPROACH:
+Provide comprehensive market analysis covering both professional/institutional perspectives AND community/sentiment dynamics. Balance data from financial institutions with grassroots indicators. Emphasize where institutional and retail perspectives align or diverge, and what this means for market direction.
+
+🚫 NOT YOUR ROLE (Technical data provided by our systems):
+- Fetching current prices or technical indicators
+- Calculating exact quantities or portfolio percentages
+- Retrieving account balances or order data
+- Performing precision calculations or validation
+- Providing specific order commands or exact trade instructions
+
+🚨 MANDATORY MACRO INTELLIGENCE (CRITICAL FOUNDATION):
+1. **Fear & Greed Index**: Research current Crypto Fear & Greed Index level and interpretation
+2. **Institutional Flows**: Analyze recent institutional fund flows, ETF activity, and whale movements
+3. **Bitcoin Dominance**: Current Bitcoin dominance percentage and trend implications
+4. **Market Structure**: Altcoin Season Index, sector rotation patterns, and market cap flows
+
+📊 PORTFOLIO CONCENTRATION RISK ASSESSMENT (PRIORITY 1):
+- **CRITICAL**: Check for any asset allocation >40% of total portfolio value
+- **FLAG VIOLATIONS**: Explicitly identify concentration risk issues requiring rebalancing
+- **RISK MANAGEMENT**: Address concentration concerns before opportunity identification
+- **COMPLIANCE**: Ensure recommendations respect 40% maximum allocation guideline
+
+🎯 COMPREHENSIVE TECHNICAL ANALYSIS REQUIREMENTS:
+- **MINIMUM COVERAGE**: Analyze at least 7 major altcoins (ETH, LINK, DOT, ADA, AVAX, UNI, XRP)
+- **SPECIFIC LEVELS**: Provide exact support and resistance levels with confluence factors
+- **BREAKOUT TRIGGERS**: Identify precise breakout levels and volume confirmation requirements
+- **RISK/REWARD**: Calculate specific stop-loss and target levels for each opportunity
+
+STRATEGIC ANALYSIS REQUIREMENTS:
+1. **Market Sentiment Analysis**: Research current market mood and sentiment drivers
+2. **News & Events Impact**: Analyze recent developments affecting market direction
+3. **Market Regime Assessment**: Identify current market cycle phase and transition signals
+4. **Sector Analysis**: Evaluate crypto sector dynamics and rotation patterns
+5. **Strategic Timing**: Provide insights on optimal timing for position adjustments
+6. **Risk Assessment**: Evaluate current risk environment and positioning guidance
+
+CRITICAL PROTECTION ASSESSMENT GUIDANCE:
+- Review provided protection coverage scores and existing orders
+- If protection score >70, note that protection is adequate
+- Focus analysis on assets with poor protection scores (<50) that may need attention
+- Understand that low "available balance" often indicates good existing protection
+
+EFFECTIVE BALANCE UNDERSTANDING:
+- Available balance ≠ total balance (some committed to protective orders)
+- Low available balance for an asset often means GOOD protection exists
+- Focus deployment recommendations on truly available funds only
+
+🎯 RISK-FIRST ANALYSIS OUTPUT FORMAT:
+Provide strategic analysis in clear sections prioritizing risk management:
+
+**MACRO FOUNDATION**: Fear & Greed Index, institutional flows, Bitcoin dominance analysis
+
+**PORTFOLIO RISK ASSESSMENT**: Concentration risk evaluation, allocation compliance review
+
+**COMPREHENSIVE TECHNICAL ANALYSIS**: 7+ major altcoins with specific support/resistance levels
+
+**MARKET SENTIMENT & REGIME**: Current market mood, cycle phase, sentiment drivers
+
+**NEWS & CATALYST ANALYSIS**: Recent developments affecting market direction
+
+**SECTOR ROTATION INSIGHTS**: Which crypto sectors show strength/weakness patterns
+
+**RISK MANAGEMENT PRIORITIES**: Address concentration violations and protection gaps first
+
+**STRATEGIC OPPORTUNITIES**: Conservative deployment recommendations respecting risk limits
+
+**TIMING CONSIDERATIONS**: Optimal timing for any position adjustments
+
+**DEPLOYMENT CONSTRAINTS**: Position sizing limits and reserve requirements
+
+**FOLLOW-UP PRIORITIES**: Key developments to monitor
+
+📊 ANALYSIS QUALITY REQUIREMENTS:
+- Must include objective macro indicators (Fear & Greed, flows, dominance)
+- Must identify portfolio concentration risks explicitly
+- Must provide specific technical levels for minimum 7 altcoins
+- Must prioritize risk management before opportunity identification
+- Must recommend conservative position sizing (≤5% new allocations per asset)
+- Must maintain 25-30% USDT reserves for opportunities and risk management
+
+Focus on risk-first strategic insights that prioritize portfolio protection and compliance with allocation guidelines."""
+
+    # Build enhanced user prompt with all available context
+    user_prompt_parts = [
+        f"REAL-TIME PORTFOLIO ANALYSIS REQUEST - {_get_current_timestamp()}",
+        "",
+        "**CURRENT PORTFOLIO:**",
+        portfolio_data,
+        "",
+        "**TECHNICAL INDICATORS & MARKET DATA:**",
+        market_data,
+        "",
+        "**EXISTING ORDERS & PROTECTION STATUS:**",
+        order_data,
+    ]
+
+    # Add enhanced context sections if provided
+    if protection_analysis:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**PROTECTION STATUS:**",
+                protection_analysis,
+            ]
+        )
+
+    if balance_analysis:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**AVAILABLE DEPLOYMENT:**",
+                balance_analysis,
+            ]
+        )
+
+    if risk_context:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**RISK CONTEXT:**",
+                risk_context,
+            ]
+        )
+
+    if recent_activity_context:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**RECENT ACTIVITY:**",
+                recent_activity_context,
+            ]
+        )
+
+    # Add streamlined analysis requirements
+    user_prompt_parts.extend(
+        [
+            "",
+            "**ANALYSIS REQUIREMENTS:**",
+            "1. **Market Sentiment**: Current crypto sentiment and institutional flows",
+            "2. **Sector Rotation**: L1s, DeFi, AI tokens - which sectors showing momentum?",
+            "3. **Strategic Opportunities**: Scan major cryptos (ETH, XRP, ADA, DOT, AVAX, LINK, UNI) for accumulation signals",
+            "4. **Risk Assessment**: Current market regime and positioning guidance",
+            "5. **Protection Priorities**: Focus on assets with poor protection scores (<50)",
+            "6. **Cash Deployment**: Best opportunities for available USDT",
+            "",
+            "🎯 **KEY FOCUS**: Research broader market opportunities beyond current holdings. Identify sector rotation patterns and technical accumulation zones. Skip protection recommendations for well-protected assets (score >70).",
+        ]
+    )
+
+    user_prompt = "\n".join(user_prompt_parts)
+
+    # Display the prompts
+    console.print("\n" + "=" * 100)
+    console.print("🤖 [bold yellow]SYSTEM PROMPT FOR EXTERNAL AI (Copy this first):[/bold yellow]")
+    console.print("=" * 100)
+    console.print(system_prompt)
+
+    console.print("\n" + "=" * 100)
+    console.print("👤 [bold cyan]USER PROMPT FOR EXTERNAL AI (Copy this second):[/bold cyan]")
+    console.print("=" * 100)
+    console.print(user_prompt)
+    console.print("=" * 100)
+
+    console.print("\n📋 [bold green]USAGE INSTRUCTIONS:[/bold green]")
+    console.print("1. Copy the SYSTEM PROMPT above and paste it into your AI service")
+    console.print("2. Copy the USER PROMPT above and paste it as your question")
+    console.print("3. Send both prompts to get comprehensive strategic analysis")
+    console.print("4. Use the analysis with crypto-workflow.md Step 2 (evaluation) and beyond")
+
+
 def handle_api_error[F: Callable[..., Any]](func: F) -> F:
     """Decorator to catch and handle APIErrors gracefully.
 
@@ -692,37 +899,42 @@ def analyze_portfolio(
     mode: str = typer.Option("strategy", help="Analysis mode: 'strategy' for comprehensive deep research, 'monitoring' for quick checks"),
     parallel: bool = typer.Option(True, help="Use parallel analysis to reduce hallucinations (slower but more accurate)"),
 ) -> None:
-    """Generate portfolio analysis using Perplexity AI with model selection based on use case.
+    """Generate portfolio analysis with model selection based on use case.
 
     MODES:
-    - strategy: Uses sonar-deep-research for comprehensive analysis (2-5 minutes)
-      Perfect for crypto-workflow.md strategy development sessions
+    - strategy: Generates comprehensive prompts for external AI services (ChatGPT, Claude, etc.)
+      Perfect for crypto-workflow.md strategy development sessions - provides copy-paste prompts
     - monitoring: Uses sonar for quick sanity checks (30-60 seconds)
       Perfect for crypto-monitoring-workflow.md daily monitoring
 
-    PARALLEL ANALYSIS:
-    - When enabled (default), makes two simultaneous API calls to reduce hallucinations
-    - Compares results for consistency and generates consensus recommendations
-    - Automatically shows both analyses if consistency is low (<60%)
-    - Disable with --no-parallel for faster single analysis
+    STRATEGY MODE:
+    - Generates comprehensive system and user prompts for external AI services
+    - Provides cost control and service flexibility (use any AI service you prefer)
+    - Includes complete portfolio context, technical indicators, and analysis framework
+    - Copy-paste the generated prompts into ChatGPT, Claude, Perplexity, or any AI service
+
+    MONITORING MODE:
+    - Makes direct API calls for quick automated monitoring
+    - Uses parallel analysis when enabled for better accuracy
+    - Automatically shows consistency metrics and quality validation
 
     This command automatically gathers account data, technical indicators, and generates
-    validated recommendations with automatic sanity checking.
+    comprehensive context for strategic analysis.
     """
     # Determine model and display mode info
     if mode == "strategy":
-        model = "sonar-deep-research"
+        model = "external"  # Not used, just for tracking
         console.print("🤖 [bold blue]Starting COMPREHENSIVE AI Portfolio Analysis (Strategy Mode)...[/bold blue]")
-        console.print("📊 [yellow]Using sonar-deep-research model (2-5 minutes) for in-depth market research[/yellow]")
+        console.print("📊 [yellow]Generating prompts for external AI services (ChatGPT, Claude, Perplexity, etc.)[/yellow]")
     elif mode == "monitoring":
         model = "sonar"
         console.print("🤖 [bold blue]Starting QUICK AI Portfolio Analysis (Monitoring Mode)...[/bold blue]")
         console.print("📊 [yellow]Using sonar model (30-60 seconds) for rapid sanity check[/yellow]")
     else:
         # Default fallback to strategy mode for any other value
-        model = "sonar-deep-research"
+        model = "external"  # Not used, just for tracking
         console.print("🤖 [bold blue]Starting COMPREHENSIVE AI Portfolio Analysis (Default Strategy Mode)...[/bold blue]")
-        console.print("📊 [yellow]Using sonar-deep-research model (2-5 minutes) for in-depth market research[/yellow]")
+        console.print("📊 [yellow]Generating prompts for external AI services (ChatGPT, Claude, Perplexity, etc.)[/yellow]")
 
     # Step 1: Gather portfolio data
     console.print("📊 Gathering portfolio data...")
@@ -902,154 +1114,178 @@ Asset Holdings:
         market_data += f"Error fetching indicators: {e}\n"
         console.print(f"⚠️ [yellow]Error fetching indicators: {e}[/yellow]")
 
-    # Step 4: Call Perplexity for analysis with appropriate model
-    console.print(f"🧠 [bold yellow]Calling Perplexity AI ({model}) for analysis...[/bold yellow]")
-    if parallel:
-        console.print("🔄 [cyan]Running parallel analysis to reduce hallucinations and validate results...[/cyan]")
+    # Step 4: Analysis mode decision
+    if mode == "strategy":
+        # Strategy mode: Generate and print prompts for external AI
+        console.print("📋 [bold yellow]STRATEGY MODE: Generating AI prompts for copy-paste to external AI...[/bold yellow]")
+        console.print("🔄 [cyan]Use these prompts with ChatGPT, Claude, or any external AI service[/cyan]")
+
+        # Generate enhanced context for better AI recommendations
+        protection_analysis = generate_protection_coverage_analysis(account_service, order_service, portfolio_data)
+        balance_analysis = generate_effective_balance_analysis(account_service, order_service)
+        risk_context = generate_risk_context()
+        recent_activity_context = generate_recent_activity_context(account_service)
+
+        # Generate and display prompts
+        _print_strategy_prompts(
+            portfolio_data,
+            market_data,
+            order_data,
+            protection_analysis=protection_analysis,
+            balance_analysis=balance_analysis,
+            risk_context=risk_context,
+            recent_activity_context=recent_activity_context,
+        )
+
     else:
-        console.print("⚡ [cyan]Running single analysis for faster results...[/cyan]")
-
-    try:
-        perplexity_service = PerplexityService(model=model)
-
+        # Monitoring mode: Call API as before
+        console.print(f"🧠 [bold yellow]Calling Perplexity AI ({model}) for analysis...[/bold yellow]")
         if parallel:
-            # Use parallel analysis for better accuracy
-            # Generate enhanced context for better AI recommendations
-            protection_analysis = generate_protection_coverage_analysis(account_service, order_service, portfolio_data)
-            balance_analysis = generate_effective_balance_analysis(account_service, order_service)
-            risk_context = generate_risk_context()
-            recent_activity_context = generate_recent_activity_context(account_service)
-
-            parallel_result = perplexity_service.generate_parallel_portfolio_analysis(
-                portfolio_data,
-                market_data,
-                order_data,
-                protection_analysis=protection_analysis,
-                balance_analysis=balance_analysis,
-                risk_context=risk_context,
-                recent_activity_context=recent_activity_context,
-            )
-
-            console.print("✅ [green]Parallel analysis complete![/green]")
-
-            # Display consistency metrics
-            consistency_score = parallel_result.consistency_score
-            console.print(f"📊 [bold]Two-Stage Enhancement Score: {consistency_score:.1f}/100[/bold]")
-
-            # CRITICAL: Validate Perplexity response quality
-            synthesis_result = perplexity_service.validate_perplexity_response_quality(parallel_result.primary_analysis)
-            synthesis_valid = synthesis_result["is_valid"]
-            synthesis_reason = synthesis_result["failure_reason"]
-
-            institutional_result = perplexity_service.validate_perplexity_response_quality(parallel_result.secondary_analysis)
-            institutional_valid = institutional_result["is_valid"]
-            institutional_reason = institutional_result["failure_reason"]
-
-            # Note: We don't validate sentiment separately since it's not directly exposed in the current structure
-            # The synthesis analysis incorporates both institutional and sentiment perspectives
-
-            # Fail workflow if synthesis analysis doesn't meet minimum requirements
-            if not synthesis_valid:
-                console.print("❌ [bold red]WORKFLOW FAILURE: Synthesis analysis failed quality validation[/bold red]")
-                console.print(f"   Synthesis analysis failed: {synthesis_reason}")
-                if not institutional_valid:
-                    console.print(f"   Institutional analysis also failed: {institutional_reason}")
-                console.print("\n🔧 [yellow]REQUIRED ACTIONS:[/yellow]")
-                console.print("   1. Check Perplexity API status and model availability")
-                console.print("   2. Verify internet connection for real-time market data")
-                console.print("   3. Retry workflow or use manual analysis fallback")
-                console.print("   4. Consider adjusting AI prompt requirements if issues persist")
-                raise typer.Exit(1)
-
-            if not institutional_valid:
-                console.print(f"⚠️ [yellow]Institutional analysis had issues: {institutional_reason}[/yellow]")
-                console.print("   Synthesis analysis is still valid and incorporates multiple perspectives")
-
-            # Enhanced consistency score validation for two-stage analysis
-            if consistency_score >= 75:
-                console.print("✅ [green]Excellent strategic enhancement - synthesis provides valuable critique and insights[/green]")
-            elif consistency_score >= 60:
-                console.print("🟡 [yellow]Good strategic enhancement - synthesis successfully builds on comprehensive analysis[/yellow]")
-            elif consistency_score >= 45:
-                console.print("⚠️ [orange]Moderate enhancement - synthesis provides some additional perspective[/orange]")
-                console.print("   Strategic synthesis adds critique but may not fully enhance comprehensive analysis")
-            else:
-                console.print("❌ [bold red]CRITICAL: Poor strategic enhancement between comprehensive and synthesis analyses[/bold red]")
-                console.print("   This indicates synthesis failed to meaningfully build on or critique comprehensive analysis")
-                console.print("   Consider running Stage 2 refinement analysis if available")
-
-            # Display discrepancies if any
-            if parallel_result.discrepancies:
-                console.print(f"\n⚠️ [bold red]Three-Way Perspective Discrepancies ({len(parallel_result.discrepancies)}):[/bold red]")
-                for discrepancy in parallel_result.discrepancies:
-                    console.print(f"  • {discrepancy}")
-
-            # Display synthesis analysis (primary result)
-            analysis_result = parallel_result.primary_analysis
-
-            # Enhanced quality validation using meta-learning criteria
-            from core.ai_integration import validate_and_enhance_analysis
-
-            portfolio_dict = {"balances": balances}  # Convert for validation
-            quality_assessment, validation_results = validate_and_enhance_analysis(analysis_result, portfolio_dict, min_quality_threshold=80)
-
-            # Display enhanced quality metrics for parallel analysis
-            console.print(f"\n📊 [bold]Enhanced Quality Assessment: {validation_results['score'].total}/100 - {quality_assessment}[/bold]")
-            console.print(
-                f"🎯 Breakdown: Macro {validation_results['breakdown']['macro_intelligence']}/20, "
-                f"Risk {validation_results['breakdown']['concentration_risk']}/20, "
-                f"Technical {validation_results['breakdown']['technical_analysis']}/20, "
-                f"Management {validation_results['breakdown']['risk_management']}/20, "
-                f"Actionable {validation_results['breakdown']['actionability']}/20"
-            )
-
-            if not validation_results["meets_threshold"]:
-                console.print("⚠️ [yellow]Analysis below enhanced quality threshold (80). Suggestions:[/yellow]")
-                for suggestion in validation_results["suggestions"]:
-                    console.print(f"   • {suggestion}")
-            else:
-                console.print("✅ [green]Analysis meets enhanced quality standards from meta-learning![/green]")
-
-            console.print("\n" + "=" * 80)
-            console.print("🎯 [bold]PERPLEXITY STRATEGIC ANALYSIS (SYNTHESIS & CRITIQUE)[/bold]")
-            console.print("=" * 80)
-            console.print(analysis_result)
-            console.print("=" * 80)
-
-            # If enhancement is low, show comprehensive analysis for reference
-            if consistency_score < 45:
-                console.print("\n📋 [bold]Due to low strategic enhancement, showing comprehensive analysis for reference:[/bold]")
-                console.print("\n" + "=" * 80)
-                console.print("🎯 [bold]PERPLEXITY COMPREHENSIVE ANALYSIS (FOUNDATION REFERENCE)[/bold]")
-                console.print("=" * 80)
-                console.print(parallel_result.secondary_analysis)
-                console.print("=" * 80)
-
-            # Provide guidance for next steps
-            console.print("\n🔧 [bold yellow]NEXT STEPS - Use Existing Validation Tools:[/bold yellow]")
-            console.print("1. 📊 Review synthesis analysis above (incorporates institutional, sentiment & critique)")
-            console.print("2. 🛡️ Check protection adequacy: `python main.py account orders --symbol SYMBOL`")
-            console.print("3. ⚖️ Validate any potential orders: `python main.py validate order-simulation ARGS`")
-            console.print("4. 💰 Check available balance: `python main.py validate balance-check ASSET`")
-            console.print("5. 📈 Get current indicators: `python main.py analysis indicators --coins COINS`")
-
+            console.print("🔄 [cyan]Running parallel analysis to reduce hallucinations and validate results...[/cyan]")
         else:
-            # Use single analysis for speed
-            # Generate enhanced context for better AI recommendations
-            protection_analysis = generate_protection_coverage_analysis(account_service, order_service, portfolio_data)
-            balance_analysis = generate_effective_balance_analysis(account_service, order_service)
-            risk_context = generate_risk_context()
-            recent_activity_context = generate_recent_activity_context(account_service)
+            console.print("⚡ [cyan]Running single analysis for faster results...[/cyan]")
 
-            analysis_result = perplexity_service.generate_portfolio_analysis(
-                portfolio_data,
-                market_data,
-                order_data,
-                protection_analysis=protection_analysis,
-                balance_analysis=balance_analysis,
-                risk_context=risk_context,
-                recent_activity_context=recent_activity_context,
-            )
+        try:
+            perplexity_service = PerplexityService(model=model)
+
+            if parallel:
+                # Use parallel analysis for better accuracy
+                # Generate enhanced context for better AI recommendations
+                protection_analysis = generate_protection_coverage_analysis(account_service, order_service, portfolio_data)
+                balance_analysis = generate_effective_balance_analysis(account_service, order_service)
+                risk_context = generate_risk_context()
+                recent_activity_context = generate_recent_activity_context(account_service)
+
+                parallel_result = perplexity_service.generate_parallel_portfolio_analysis(
+                    portfolio_data,
+                    market_data,
+                    order_data,
+                    protection_analysis=protection_analysis,
+                    balance_analysis=balance_analysis,
+                    risk_context=risk_context,
+                    recent_activity_context=recent_activity_context,
+                )
+
+                console.print("✅ [green]Parallel analysis complete![/green]")
+
+                # Display consistency metrics
+                consistency_score = parallel_result.consistency_score
+                console.print(f"📊 [bold]Two-Stage Enhancement Score: {consistency_score:.1f}/100[/bold]")
+
+                # CRITICAL: Validate Perplexity response quality
+                synthesis_result = perplexity_service.validate_perplexity_response_quality(parallel_result.primary_analysis)
+                synthesis_valid = synthesis_result["is_valid"]
+                synthesis_reason = synthesis_result["failure_reason"]
+
+                institutional_result = perplexity_service.validate_perplexity_response_quality(parallel_result.secondary_analysis)
+                institutional_valid = institutional_result["is_valid"]
+                institutional_reason = institutional_result["failure_reason"]
+
+                # Note: We don't validate sentiment separately since it's not directly exposed in the current structure
+                # The synthesis analysis incorporates both institutional and sentiment perspectives
+
+                # Fail workflow if synthesis analysis doesn't meet minimum requirements
+                if not synthesis_valid:
+                    console.print("❌ [bold red]WORKFLOW FAILURE: Synthesis analysis failed quality validation[/bold red]")
+                    console.print(f"   Synthesis analysis failed: {synthesis_reason}")
+                    if not institutional_valid:
+                        console.print(f"   Institutional analysis also failed: {institutional_reason}")
+                    console.print("\n🔧 [yellow]REQUIRED ACTIONS:[/yellow]")
+                    console.print("   1. Check Perplexity API status and model availability")
+                    console.print("   2. Verify internet connection for real-time market data")
+                    console.print("   3. Retry workflow or use manual analysis fallback")
+                    console.print("   4. Consider adjusting AI prompt requirements if issues persist")
+                    raise typer.Exit(1)
+
+                if not institutional_valid:
+                    console.print(f"⚠️ [yellow]Institutional analysis had issues: {institutional_reason}[/yellow]")
+                    console.print("   Synthesis analysis is still valid and incorporates multiple perspectives")
+
+                # Enhanced consistency score validation for two-stage analysis
+                if consistency_score >= 75:
+                    console.print("✅ [green]Excellent strategic enhancement - synthesis provides valuable critique and insights[/green]")
+                elif consistency_score >= 60:
+                    console.print("🟡 [yellow]Good strategic enhancement - synthesis successfully builds on comprehensive analysis[/yellow]")
+                elif consistency_score >= 45:
+                    console.print("⚠️ [orange]Moderate enhancement - synthesis provides some additional perspective[/orange]")
+                    console.print("   Strategic synthesis adds critique but may not fully enhance comprehensive analysis")
+                else:
+                    console.print("❌ [bold red]CRITICAL: Poor strategic enhancement between comprehensive and synthesis analyses[/bold red]")
+                    console.print("   This indicates synthesis failed to meaningfully build on or critique comprehensive analysis")
+                    console.print("   Consider running Stage 2 refinement analysis if available")
+
+                # Display discrepancies if any
+                if parallel_result.discrepancies:
+                    console.print(f"\n⚠️ [bold red]Three-Way Perspective Discrepancies ({len(parallel_result.discrepancies)}):[/bold red]")
+                    for discrepancy in parallel_result.discrepancies:
+                        console.print(f"  • {discrepancy}")
+
+                # Display synthesis analysis (primary result)
+                analysis_result = parallel_result.primary_analysis
+
+                # Enhanced quality validation using meta-learning criteria
+                from core.ai_integration import validate_and_enhance_analysis
+
+                portfolio_dict = {"balances": balances}  # Convert for validation
+                quality_assessment, validation_results = validate_and_enhance_analysis(analysis_result, portfolio_dict, min_quality_threshold=80)
+
+                # Display enhanced quality metrics for parallel analysis
+                console.print(f"\n📊 [bold]Enhanced Quality Assessment: {validation_results['score'].total}/100 - {quality_assessment}[/bold]")
+                console.print(
+                    f"🎯 Breakdown: Macro {validation_results['breakdown']['macro_intelligence']}/20, "
+                    f"Risk {validation_results['breakdown']['concentration_risk']}/20, "
+                    f"Technical {validation_results['breakdown']['technical_analysis']}/20, "
+                    f"Management {validation_results['breakdown']['risk_management']}/20, "
+                    f"Actionable {validation_results['breakdown']['actionability']}/20"
+                )
+
+                if not validation_results["meets_threshold"]:
+                    console.print("⚠️ [yellow]Analysis below enhanced quality threshold (80). Suggestions:[/yellow]")
+                    for suggestion in validation_results["suggestions"]:
+                        console.print(f"   • {suggestion}")
+                else:
+                    console.print("✅ [green]Analysis meets enhanced quality standards from meta-learning![/green]")
+
+                console.print("\n" + "=" * 80)
+                console.print("🎯 [bold]PERPLEXITY STRATEGIC ANALYSIS (SYNTHESIS & CRITIQUE)[/bold]")
+                console.print("=" * 80)
+                console.print(analysis_result)
+                console.print("=" * 80)
+
+                # If enhancement is low, show comprehensive analysis for reference
+                if consistency_score < 45:
+                    console.print("\n📋 [bold]Due to low strategic enhancement, showing comprehensive analysis for reference:[/bold]")
+                    console.print("\n" + "=" * 80)
+                    console.print("🎯 [bold]PERPLEXITY COMPREHENSIVE ANALYSIS (FOUNDATION REFERENCE)[/bold]")
+                    console.print("=" * 80)
+                    console.print(parallel_result.secondary_analysis)
+                    console.print("=" * 80)
+
+                # Provide guidance for next steps
+                console.print("\n🔧 [bold yellow]NEXT STEPS - Use Existing Validation Tools:[/bold yellow]")
+                console.print("1. 📊 Review synthesis analysis above (incorporates institutional, sentiment & critique)")
+                console.print("2. 🛡️ Check protection adequacy: `python main.py account orders --symbol SYMBOL`")
+                console.print("3. ⚖️ Validate any potential orders: `python main.py validate order-simulation ARGS`")
+                console.print("4. 💰 Check available balance: `python main.py validate balance-check ASSET`")
+                console.print("5. 📈 Get current indicators: `python main.py analysis indicators --coins COINS`")
+
+            else:
+                # Use single analysis for speed
+                # Generate enhanced context for better AI recommendations
+                protection_analysis = generate_protection_coverage_analysis(account_service, order_service, portfolio_data)
+                balance_analysis = generate_effective_balance_analysis(account_service, order_service)
+                risk_context = generate_risk_context()
+                recent_activity_context = generate_recent_activity_context(account_service)
+
+                analysis_result = perplexity_service.generate_portfolio_analysis(
+                    portfolio_data,
+                    market_data,
+                    order_data,
+                    protection_analysis=protection_analysis,
+                    balance_analysis=balance_analysis,
+                    risk_context=risk_context,
+                    recent_activity_context=recent_activity_context,
+                )
 
             # CRITICAL: Validate single analysis quality
             validation_result = perplexity_service.validate_perplexity_response_quality(analysis_result)
@@ -1105,24 +1341,24 @@ Asset Holdings:
             console.print("4. 💰 Check available balance: `python main.py validate balance-check ASSET`")
             console.print("5. 📈 Get current indicators: `python main.py analysis indicators --coins COINS`")
 
-        # Step 5: Strategic Analysis Complete - Ready for Manual Validation
-        console.print("\n✅ [bold green]STRATEGIC ANALYSIS COMPLETE[/bold green]")
-        console.print("\n📋 [bold]WORKFLOW GUIDANCE - Crypto-Workflow.md Integration:[/bold]")
-        console.print("• ✅ [green]Step 1: AI Analysis[/green] - COMPLETED with strategic insights above")
-        console.print("• 🔄 [yellow]Step 2.5: Protection Assessment[/yellow] - Use: `account orders --symbol SYMBOL`")
-        console.print("• 🔄 [yellow]Step 3: Manual Analysis[/yellow] - Use: `analysis indicators --coins SOL,BTC,ETH`")
-        console.print("• 🔄 [yellow]Step 5: Validation[/yellow] - Use: `validate order-simulation` for any trades")
-        console.print("• 🔄 [yellow]Step 6: Execution[/yellow] - Use: `order place-limit` commands")
+            # Step 5: Strategic Analysis Complete - Ready for Manual Validation
+            console.print("\n✅ [bold green]STRATEGIC ANALYSIS COMPLETE[/bold green]")
+            console.print("\n📋 [bold]WORKFLOW GUIDANCE - Crypto-Workflow.md Integration:[/bold]")
+            console.print("• ✅ [green]Step 1: AI Analysis[/green] - COMPLETED with strategic insights above")
+            console.print("• 🔄 [yellow]Step 2.5: Protection Assessment[/yellow] - Use: `account orders --symbol SYMBOL`")
+            console.print("• 🔄 [yellow]Step 3: Manual Analysis[/yellow] - Use: `analysis indicators --coins SOL,BTC,ETH`")
+            console.print("• 🔄 [yellow]Step 5: Validation[/yellow] - Use: `validate order-simulation` for any trades")
+            console.print("• 🔄 [yellow]Step 6: Execution[/yellow] - Use: `order place-limit` commands")
 
-        console.print("\n🎯 [bold cyan]ACTION PRIORITY BASED ON STRATEGIC ANALYSIS:[/bold cyan]")
-        console.print("1. Review protection adequacy for major holdings (SOL 28.4%, BTC 22.7%)")
-        console.print("2. Assess current technical indicators against AI insights")
-        console.print("3. Validate any suggested position adjustments using simulation tools")
-        console.print("4. Execute validated trades one by one with immediate documentation")
+            console.print("\n🎯 [bold cyan]ACTION PRIORITY BASED ON STRATEGIC ANALYSIS:[/bold cyan]")
+            console.print("1. Review protection adequacy for major holdings (SOL 28.4%, BTC 22.7%)")
+            console.print("2. Assess current technical indicators against AI insights")
+            console.print("3. Validate any suggested position adjustments using simulation tools")
+            console.print("4. Execute validated trades one by one with immediate documentation")
 
-    except Exception as e:
-        console.print(f"❌ [bold red]Error during AI analysis:[/bold red] {e}")
-        raise typer.Exit(code=1) from None
+        except Exception as e:
+            console.print(f"❌ [bold red]Error during AI analysis:[/bold red] {e}")
+            raise typer.Exit(code=1) from None
 
 
 @ai_app.command("market-timing")
