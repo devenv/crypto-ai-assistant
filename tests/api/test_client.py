@@ -129,6 +129,19 @@ def test_get_all_tickers(mock_session: MagicMock, mock_env: Any) -> None:
 
 
 @patch("requests.Session")
+def test_get_price(mock_session: MagicMock, mock_env: Any) -> None:
+    """Test getting a single symbol price."""
+    client = BinanceClient()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"symbol": "ETHUSDT", "price": "2500.00"}
+    mock_session.return_value.request.return_value = mock_response
+
+    price = client.get_price("ETHUSDT")
+    assert price == 2500.00
+    mock_session.return_value.request.assert_called_once()
+
+
+@patch("requests.Session")
 def test_get_trade_history(mock_session: MagicMock, mock_env: Any) -> None:
     """Test getting trade history."""
     client = BinanceClient()

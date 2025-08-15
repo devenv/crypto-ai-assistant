@@ -43,11 +43,19 @@ class ProtectionAnalyzer:
             "total_protected_quantity": 0.0,
         }
 
-        # Filter for protective orders (SELL LIMIT orders above current price)
+        # Filter for protective orders:
+        # - SELL LIMIT above current price (take-profit)
+        # - SELL STOP/STOP_LOSS/STOP_LOSS_LIMIT below current price (stop-loss)
         protective_orders = []
         for order in existing_orders:
             try:
-                if order.get("side") == "SELL" and order.get("type") == "LIMIT" and float(order.get("price", 0)) > current_price:
+                side = order.get("side")
+                otype = order.get("type")
+                price = float(order.get("price", 0))
+
+                if side == "SELL" and otype == "LIMIT" and price > current_price:
+                    protective_orders.append(order)
+                elif side == "SELL" and otype in {"STOP", "STOP_LOSS", "STOP_LOSS_LIMIT"} and price < current_price:
                     protective_orders.append(order)
             except (ValueError, TypeError):
                 # Skip orders with invalid price data
@@ -65,8 +73,8 @@ class ProtectionAnalyzer:
             }
 
         # PROXIMITY SCORING (50 points max)
-        closest_order = min(protective_orders, key=lambda x: abs(float(x["price"]) - current_price))
-        closest_price = float(closest_order["price"])
+        closest_order = min(protective_orders, key=lambda x: abs(float(x.get("price", 0)) - current_price))
+        closest_price = float(closest_order.get("price", 0))
 
         # Prevent division by zero
         if current_price == 0:

@@ -369,6 +369,23 @@ class BinanceClient:
         result = self._request("GET", "/api/v3/ticker/price", signed=False)
         return cast(list[Ticker], result)
 
+    def get_price(self, symbol: str) -> float | None:
+        """Get the latest price for a single symbol.
+
+        Args:
+            symbol: Trading symbol (e.g., "ETHUSDT").
+
+        Returns:
+            Latest price as float if available, otherwise None.
+        """
+        try:
+            result = self._request("GET", "/api/v3/ticker/price", params={"symbol": symbol.upper()}, signed=False)
+            # API returns {"symbol": ..., "price": "..."}
+            price_str = result.get("price")
+            return float(price_str) if price_str is not None else None
+        except Exception:
+            return None
+
     def get_balances(self, min_value: float = 10.0) -> list[ProcessedBalance]:
         """Gets account balances above a minimum value threshold with USD values.
 

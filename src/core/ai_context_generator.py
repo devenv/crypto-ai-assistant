@@ -95,7 +95,7 @@ Required Elements: Specific support/resistance levels, breakout triggers, risk/r
 3. TECHNICAL PRECISION: Provide specific levels for minimum 7 major altcoins
 4. PROTECTION ASSESSMENT: Check protection scores before recommending protection
 5. BALANCE INTERPRETATION: Use "Available" amounts for new positions only
-6. POSITION SIZING: Limit new allocations to ≤5% per asset, maintain 25-30% USDT reserves
+        6. POSITION SIZING: Limit new allocations to ≤5% per asset; prefer keeping some USDT reserves (e.g., 10–30%) when practical
 7. RISK MANAGEMENT: Prioritize portfolio compliance and protection before deployment
 
 🎯 ENHANCED CONTEXT QUALITY METRICS:

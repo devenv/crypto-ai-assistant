@@ -58,14 +58,34 @@ class AIQualityValidator:
         risk_score = cls._score_risk_management(text_lower)
         actionability_score = cls._score_actionability(text_lower, analysis_text)
 
-        return QualityScore(
+        base_score = QualityScore(
             macro_intelligence=macro_score,
             concentration_risk=concentration_score,
             technical_analysis=technical_score,
             risk_management=risk_score,
             actionability=actionability_score,
-            total=0,  # Will be calculated in __post_init__
+            total=0,  # Calculated in __post_init__
         )
+
+        # Gap Checklist overlay: base 100 − 5 per missing criteria
+        overlay_total = 100
+        # Market timing covered? infer via macro score presence
+        if macro_score == 0:
+            overlay_total -= 5
+        # Actionable levels & stops? require actionability and presence of numeric levels
+        has_levels = technical_score > 0
+        if actionability_score == 0 or not has_levels:
+            overlay_total -= 5
+        # Risk assessment explicit?
+        if risk_score == 0:
+            overlay_total -= 5
+        # Protection addressed? simple keyword heuristic
+        if not ("stop" in text_lower or "protect" in text_lower or "oco" in text_lower):
+            overlay_total -= 5
+
+        # Final total is the minimum of category total and overlay
+        base_score.total = min(base_score.total, overlay_total)
+        return base_score
 
     @classmethod
     def _score_macro_intelligence(cls, text_lower: str) -> int:
@@ -126,19 +146,39 @@ class AIQualityValidator:
             score += 6
 
         # Check for specific price levels (up to 6 points)
+        # Deduplicate across patterns to avoid double-counting the same level
         price_patterns = [
             r"\$[\d,]+\.?\d*",  # Dollar amounts
             r"[\d,]+\.?\d*\s*usdt",  # USDT amounts
-            r"support.*[\d,]+",  # Support levels
-            r"resistance.*[\d,]+",  # Resistance levels
+            r"support[^\n\r]*?[\d,]+\.?\d*",  # Support levels with numeric
+            r"resistance[^\n\r]*?[\d,]+\.?\d*",  # Resistance levels with numeric
         ]
 
-        level_count = 0
-        for pattern in price_patterns:
-            matches = re.findall(pattern, text_lower)
-            level_count += len(matches)
+        def _normalize_numeric(token: str) -> str:
+            # Keep digits and decimal point; drop other chars (like $, commas, words)
+            cleaned = re.sub(r"[^0-9\.]", "", token)
+            # Collapse multiple dots if any (defensive)
+            cleaned = re.sub(r"\.+", ".", cleaned)
+            return cleaned.strip(".")
 
-        # Award points based on specific levels provided
+        level_tokens: set[str] = set()
+        for pattern in price_patterns:
+            for match in re.findall(pattern, text_lower):
+                # Extract numeric parts from the match and add them as tokens
+                numerics = re.findall(r"[\d,]+\.?\d*", match)
+                if numerics:
+                    for num in numerics:
+                        norm = _normalize_numeric(num)
+                        if norm:
+                            level_tokens.add(norm)
+                else:
+                    norm = _normalize_numeric(match)
+                    if norm:
+                        level_tokens.add(norm)
+
+        level_count = len(level_tokens)
+
+        # Award points based on unique specific levels provided
         if level_count >= 10:
             score += 6
         elif level_count >= 5:

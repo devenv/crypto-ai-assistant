@@ -210,7 +210,7 @@ Provide strategic analysis in clear sections prioritizing risk management:
 
 **TIMING CONSIDERATIONS**: Optimal timing for any position adjustments
 
-**DEPLOYMENT CONSTRAINTS**: Position sizing limits and reserve requirements
+**DEPLOYMENT CONSTRAINTS**: Position sizing limits and optional reserve preferences
 
 **FOLLOW-UP PRIORITIES**: Key developments to monitor
 
@@ -220,7 +220,7 @@ Provide strategic analysis in clear sections prioritizing risk management:
 - Must provide specific technical levels for minimum 7 altcoins
 - Must prioritize risk management before opportunity identification
 - Must recommend conservative position sizing (≤5% new allocations per asset)
-- Must maintain 25-30% USDT reserves for opportunities and risk management
+- Prefer keeping some USDT reserves (e.g., 10–30%) when practical; flexibility allowed based on strategy and market conditions
 
 Focus on risk-first strategic insights that prioritize portfolio protection and compliance with allocation guidelines."""
 

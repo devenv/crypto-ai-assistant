@@ -1,10 +1,10 @@
-# AI Trading Workflow – Strategic Development (v5.0)
+# AI Trading Workflow – Strategic Development (v6.0)
 
 This workflow supports comprehensive research and strategy creation for crypto trading. It is designed to work alongside daily monitoring and is intended for discrete planning sessions rather than day‑to‑day oversight.
 
 ## Guiding Principles
 
-* **All Coins Matter** – analyse every portfolio position above $1.00, not just the largest holdings. Smaller positions can signal market shifts and must be protected.
+* **All Coins Matter** – analyse every portfolio position meeting scope: value > $1.00 OR allocation > 1% (ignore true dust).
 * **Risk First** – ensure every position has a protective strategy before seeking new opportunities.
 * **Safety Always** – back up private keys, never share credentials, and start small when testing new strategies.
 
@@ -32,6 +32,12 @@ The strategic workflow follows eight modular steps. Each module can be reference
 
 ### Module A – External AI Analysis (Interactive Two‑Stage)
 
+#### Prompt Handling Protocol (single source)
+- Copy in this exact order each time (do not repeat elsewhere; link back here):
+  1) SYSTEM PROMPT → copy first
+  2) USER PROMPT → copy second
+  3) Paste AI response back to the app
+
 1. **Agent Generates Prompts:**
 
    * Agent runs `python main.py ai analyze-portfolio --mode strategy` to produce a detailed system prompt and user prompt.
@@ -46,9 +52,12 @@ The strategic workflow follows eight modular steps. Each module can be reference
 
 3. **Agent Evaluates Quality:**
 
-   * Agent scores the AI response (>75 = proceed; 60–74 = request clarification; <60 = try another service or manual analysis)
-   * Agent identifies gaps in market timing, actionability, risk assessment or protection
-   * If analysis is insufficient, agent requests specific follow-up questions or suggests alternative AI services
+   * Base score = 100. Gap Checklist (mechanical):
+     - Market timing covered? If no: −5
+     - Actionable levels & stops? If no: −5
+     - Risk assessment explicit? If no: −5
+     - Protection addressed? If no: −5
+   * Proceed thresholds: ≥75 proceed; 60–74 request clarification; <60 re-run or switch provider
 
 **📋 Agent Formatting Requirements:**
 - Display each prompt in separate code blocks with clear markdown headers
@@ -72,27 +81,20 @@ User: [Pastes AI analysis response]
 Agent: "Analysis received. Quality score: 82/100. Proceeding to Module B..."
 ```
 
-### Module B – Protection & Validation
+### Module B – Protection & Validation (Now before deeper AI)
 
-Before executing any recommendation:
+Run this immediately after Module A prompts are prepared (can feed gaps back to AI):
 
 1. **Check Existing Orders:** `python main.py account orders --symbol SYMBOL` for each holding.
-2. **Assess Coverage:** ensure sell orders and stop levels adequately protect each position. If there's no stop within 10 % of current price, plan to add protection.
+2. **Assess Coverage:** ensure sell orders and stop levels adequately protect each position. If no stop within 10% or inadequate TP coverage, log the gap.
 3. **Validate Actions:** simulate proposed orders (`python main.py validate order-simulation ...`) and verify balances (`python main.py validate balance-check ASSET`).
+4. Feed gaps to AI: “Update protection for [symbols with gaps]; skip [symbols protected].”
 
-### Module C – Action Plan Development
+### Module C – Execution Module (Merged: Plan + Execute)
 
-Convert validated AI insights into a practical plan:
-
-1. Summarise the rationale and risk/reward for each trade.
-2. Confirm available funds and conflict with existing orders.
-3. Draft specific orders (side, price, size) and document them in your plan.
-
-### Module D – Execution & Verification
-
-1. Execute orders one at a time using `python main.py order ...`.
-2. Immediately log each order ID and update your plan.
-3. After execution, verify orders and positions (`python main.py account orders` and `python main.py account info`).
+Single loop for efficiency:
+1. Validate recommendation → Place order(s) → Log order IDs → Verify positions and protection
+2. Commands: `order place-*`, `account orders`, `account info`, plus `validate *`
 
 ### Module E – Transition to Monitoring
 
@@ -110,16 +112,29 @@ Once all strategic actions are complete:
 
 * **OCO (One‑Cancels‑Other)**: combines a take‑profit and stop‑loss order. Suitable when you need downside protection and upside capture simultaneously.
 * **Limit Sell Above Market:** for profit taking when you already have sufficient downside protection.
-* **Sell Orders Within 5 % of current price and covering >50 % of the position** count as good protection. Otherwise, add or adjust protective orders.
+* **Protection adequacy guide**: stop within 10% OR diversified TP coverage covering ≥50% of position earns “GOOD”. Below that: flag as gap.
+
+### Macro & Risk Triggers (Action-Oriented)
+- Call out shifts that should trigger strategy adjustment:
+  - Fear & Greed Index > 80 (overheated), < 20 (capitulation)
+  - BTC Dominance < 59% (alt season risk-on), > 55% (BTC-led risk-off)
+  - ETF/institutional flow inflections (notable in/out flows)
+
+### Tactical Snapshot (post-AI)
+- One-page sheet to drive action:
+  - Macro Summary (with triggers)
+  - Risk Flags (🔴/🟠/🟢 by severity)
+  - Top 3 Actions with entry/stop/size
 
 ### Common Commands
 
 * **Portfolio & Orders:** `account info`, `account orders`, `account history SYMBOL --limit N`
 * **Trading:** `order place-limit SYMBOL SIDE QTY PRICE`, `order place-market`, `order place-oco`, `order cancel`
 * **Analysis & AI:** `analysis indicators --coins COIN_LIST`, `ai analyze-portfolio --mode strategy|monitoring`, `validate ai-recommendations`, `validate order-simulation`, `validate balance-check`
+* **Tactical Snapshot:** `ai analyze-portfolio --mode strategy --snapshot`
 
 For additional details on troubleshooting, error recovery, and manual fallback procedures, consult the full reference section of your original workflow document.
 
 ---
 
-This rewrite condenses repeated instructions, groups related tasks into clear modules and references, and clarifies which tools and steps apply at each stage of your strategic process.
+This v6.0 update consolidates prompt handling, makes quality scoring mechanical via a Gap Checklist, moves protection assessment earlier, merges execution into one module, adds macro/risk triggers, introduces color-coded risk states, and provides a tactical snapshot to accelerate decisions.

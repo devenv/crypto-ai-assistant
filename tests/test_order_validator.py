@@ -140,6 +140,48 @@ class TestOrderValidator:
         assert is_valid is False
         assert any("CRITICAL: SELL LIMIT" in error and "would fill IMMEDIATELY" in error for error in errors)
 
+    def test_available_balance_uses_exchange_assets_buy_ethbtc(self, validator: OrderValidator, mock_client: Mock) -> None:
+        """BUY ETHBTC should check quote BTC, not USDT."""
+        mock_client.get_all_tickers.return_value = [{"symbol": "ETHBTC", "price": "0.050000"}]
+        mock_client.get_exchange_info.return_value = {"symbols": [{"symbol": "ETHBTC", "baseAsset": "ETH", "quoteAsset": "BTC", "filters": []}]}
+
+        with patch("core.account.AccountService") as MockAcct:
+            service = MockAcct.return_value
+            # Suppose available BTC is insufficient
+            service.get_effective_available_balance.return_value = (0.001, {"buy_orders": 0.0})
+
+            is_valid, errors = validator.validate_order_placement(
+                symbol="ETHBTC",
+                side=OrderSide.BUY,
+                order_type=OrderType.LIMIT,
+                quantity=1.0,
+                price=0.1,  # requires 0.1 BTC
+            )
+
+            assert is_valid is False
+            assert any("Insufficient effective BTC balance" in e for e in errors)
+
+    def test_available_balance_uses_exchange_assets_sell_ethbtc(self, validator: OrderValidator, mock_client: Mock) -> None:
+        """SELL ETHBTC should check base ETH balance."""
+        mock_client.get_all_tickers.return_value = [{"symbol": "ETHBTC", "price": "0.050000"}]
+        mock_client.get_exchange_info.return_value = {"symbols": [{"symbol": "ETHBTC", "baseAsset": "ETH", "quoteAsset": "BTC", "filters": []}]}
+
+        with patch("core.account.AccountService") as MockAcct:
+            service = MockAcct.return_value
+            # Suppose available ETH is insufficient
+            service.get_effective_available_balance.return_value = (0.2, {"sell_orders": 0.0, "oco_orders": 0.0})
+
+            is_valid, errors = validator.validate_order_placement(
+                symbol="ETHBTC",
+                side=OrderSide.SELL,
+                order_type=OrderType.LIMIT,
+                quantity=0.5,
+                price=0.1,
+            )
+
+            assert is_valid is False
+            assert any("Insufficient effective ETH balance" in e for e in errors)
+
     def test_validate_order_placement_no_current_price(self, validator: OrderValidator, mock_client: Mock) -> None:
         """Test validation when current price cannot be retrieved."""
         mock_client.get_all_tickers.return_value = []
@@ -415,7 +457,10 @@ class TestUtilityMethods:
             "symbols": [
                 {
                     "symbol": "ETHUSDT",
-                    "filters": [{"filterType": "LOT_SIZE", "minQty": "0.00010000", "stepSize": "0.00010000"}],
+                    "filters": [
+                        {"filterType": "LOT_SIZE", "minQty": "0.00010000", "stepSize": "0.00010000"},
+                        {"filterType": "PRICE_FILTER", "minPrice": "0.01000000", "maxPrice": "1000000.00000000", "tickSize": "0.01000000"},
+                    ],
                 }
             ]
         }
@@ -426,6 +471,8 @@ class TestUtilityMethods:
         assert "ETHUSDT LOT_SIZE" in info
         assert "Step Size:" in info
         assert "Minimum:" in info
+        assert "PRICE_FILTER Tick Size:" in info
+        assert "Example Valid Prices:" in info
 
     def test_get_lot_size_info_display_no_data(self, validator: OrderValidator) -> None:
         """Test lot size info display when no data available."""

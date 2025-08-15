@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from api.client import BinanceClient
 from api.enums import OrderSide, OrderType
+from core.precision_formatter import PrecisionFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,7 @@ class OrderValidator:
             symbol_data = symbols_list[0]
             filters = {f["filterType"]: f for f in symbol_data.get("filters", [])}
             lot_filter = filters.get("LOT_SIZE")
+            price_filter = filters.get("PRICE_FILTER")
 
             if not lot_filter:
                 return f"❌ No LOT_SIZE filter found for {symbol}"
@@ -128,13 +130,32 @@ class OrderValidator:
             else:
                 decimal_places = 0
 
-            return (
-                f"📏 {symbol} LOT_SIZE Requirements:\n"
-                f"   • Step Size: {step_size} ({decimal_places} decimal places)\n"
-                f"   • Minimum: {min_qty}\n"
-                f"   • Maximum: {max_qty}\n"
-                f"   • Example Valid Quantities: {min_qty}, {min_qty + step_size:.{decimal_places}f}, {min_qty + 2 * step_size:.{decimal_places}f}"
-            )
+            lines = [
+                f"📏 {symbol} LOT_SIZE Requirements:",
+                f"   • Step Size: {step_size} ({decimal_places} decimal places)",
+                f"   • Minimum: {min_qty}",
+                f"   • Maximum: {max_qty}",
+                f"   • Example Valid Quantities: {min_qty}, {min_qty + step_size:.{decimal_places}f}, {min_qty + 2 * step_size:.{decimal_places}f}",
+            ]
+
+            # Include tick-size examples if available
+            if price_filter and price_filter.get("tickSize"):
+                tick_size = float(price_filter.get("tickSize", 0))
+                tick_step_str = str(tick_size)
+                if "." in tick_step_str:
+                    price_decimals = len(tick_step_str.split(".")[1].rstrip("0"))
+                else:
+                    price_decimals = 0
+                min_price = float(price_filter.get("minPrice", 0))
+                example_prices = [
+                    f"{min_price:.{price_decimals}f}",
+                    f"{(min_price + tick_size):.{price_decimals}f}",
+                    f"{(min_price + 2 * tick_size):.{price_decimals}f}",
+                ]
+                lines.append(f"   • PRICE_FILTER Tick Size: {tick_size} ({price_decimals} decimal places)")
+                lines.append(f"   • Example Valid Prices: {', '.join(example_prices)}")
+
+            return "\n".join(lines)
 
         except Exception as e:
             return f"❌ Error retrieving lot size info for {symbol}: {str(e)}"
@@ -192,7 +213,11 @@ class OrderValidator:
         price: float | None,
         current_price: float,
     ) -> tuple[bool, list[str]]:
-        """Validate that sufficient balance is available for the order, accounting for existing orders."""
+        """Validate that sufficient balance is available for the order, accounting for existing orders.
+
+        Uses exchange info to determine `baseAsset` and `quoteAsset` for the given `symbol`.
+        Falls back to common quote suffix parsing if exchange info is unavailable.
+        """
         errors: list[str] = []
 
         try:
@@ -201,13 +226,13 @@ class OrderValidator:
 
             account_service = AccountService(self._client)
 
+            base_asset, quote_asset = self._get_symbol_assets(symbol)
+
             if side == OrderSide.BUY:
-                # For BUY orders, need enough USDT (or quote currency)
-                quote_asset = "USDT"  # Assuming USDT pairs for now
+                # For BUY orders, need enough quote currency
                 effective_price = price if price else current_price
                 required_amount = quantity * effective_price
 
-                # Get effective available balance (accounts for existing orders)
                 available_balance, commitments = account_service.get_effective_available_balance(quote_asset)
 
                 if available_balance < required_amount:
@@ -219,9 +244,6 @@ class OrderValidator:
 
             else:  # OrderSide.SELL
                 # For SELL orders, need enough of the base asset
-                base_asset = symbol.replace("USDT", "").replace("BUSD", "").replace("BTC", "")  # Simple extraction
-
-                # Get effective available balance (accounts for existing orders)
                 available_balance, commitments = account_service.get_effective_available_balance(base_asset)
 
                 if available_balance < quantity:
@@ -236,6 +258,37 @@ class OrderValidator:
             errors.append(f"Balance validation error: {str(e)}")
 
         return len(errors) == 0, errors
+
+    def _get_symbol_assets(self, symbol: str) -> tuple[str, str]:
+        """Return (base_asset, quote_asset) for a trading symbol.
+
+        Attempts to read from exchange info; falls back to suffix parsing.
+        """
+        try:
+            symbol_info_raw = self._client.get_exchange_info(symbol)
+            if symbol_info_raw:
+                info = cast(dict[str, Any], symbol_info_raw)
+                symbols_list = info.get("symbols", [])
+                if symbols_list:
+                    data = symbols_list[0]
+                    base = cast(str, data.get("baseAsset", ""))
+                    quote = cast(str, data.get("quoteAsset", ""))
+                    if base and quote:
+                        return base, quote
+        except Exception:
+            # Ignore and fallback
+            pass
+
+        # Fallback parsing by known quote suffixes
+        known_quotes = ["USDT", "BUSD", "BTC", "USDC", "FDUSD", "TUSD"]
+        for quote in known_quotes:
+            if symbol.endswith(quote):
+                base = symbol[: -len(quote)]
+                if base:
+                    return base, quote
+
+        # Last resort: assume USDT quote
+        return symbol.replace("USDT", ""), "USDT"
 
     def _get_symbol_validation_data(self, symbol: str) -> tuple[dict[str, Any] | None, float | None, list[str]]:
         """Get symbol information and current price for validation.
@@ -418,6 +471,27 @@ class OrderValidator:
     def _get_current_price(self, symbol: str) -> float | None:
         """Get current price for a symbol."""
         try:
+            # Prefer a direct price method if available
+            price_value: float | None = None
+            try:
+                get_price = getattr(self._client, "get_price", None)
+                if callable(get_price):
+                    candidate = get_price(symbol)
+                    # Only accept primitive numeric or string types; ignore MagicMock or other objects
+                    if isinstance(candidate, int | float | str):
+                        try:
+                            price_value = float(candidate)
+                        except (TypeError, ValueError):
+                            price_value = None
+                    else:
+                        price_value = None
+            except Exception:
+                price_value = None
+
+            if price_value is not None:
+                return price_value
+
+            # Fallback to scanning all tickers
             tickers = self._client.get_all_tickers()
             for ticker in tickers:
                 if ticker["symbol"] == symbol:
@@ -431,6 +505,9 @@ class OrderValidator:
         errors: list[str] = []
         if not lot_filter:
             return errors
+
+        # Use Decimal for robust precision math
+        from decimal import ROUND_DOWN, Decimal
 
         min_qty = float(lot_filter.get("minQty", 0))
         max_qty = float(lot_filter.get("maxQty", float("inf")))
@@ -448,13 +525,27 @@ class OrderValidator:
         if quantity > max_qty:
             errors.append(f"❌ QUANTITY TOO LARGE: {quantity} above maximum {max_qty} (exchange requirement)")
         if step_size > 0:
-            # Use proper floating point comparison for step size alignment
-            diff = quantity - min_qty
-            remainder = abs(diff % step_size)
-            if remainder > 1e-8 and abs(remainder - step_size) > 1e-8:
-                # Calculate the correctly aligned quantity
-                steps = int((quantity - min_qty) / step_size)
-                suggested_qty = steps * step_size + min_qty
+            # Decimal-based alignment check
+            q_dec = Decimal(str(quantity))
+            min_dec = Decimal(str(min_qty))
+            step_dec = Decimal(str(step_size))
+            steps_dec = ((q_dec - min_dec) / step_dec).quantize(Decimal("1"), rounding=ROUND_DOWN)
+            aligned_dec = steps_dec * step_dec + min_dec
+            if aligned_dec != q_dec:
+                # Suggest aligned quantity via central formatter
+                try:
+                    symbol_for_format = cast(str, None)  # Placeholder for format context if available
+                except Exception:
+                    symbol_for_format = None  # Defensive fallback
+
+                suggested_qty: float
+                if symbol_for_format:
+                    formatter = PrecisionFormatter(self._client)
+                    suggested_qty = formatter.format_quantity(symbol_for_format, quantity)
+                else:
+                    # Fallback: use computed aligned value
+                    suggested_qty = float(aligned_dec)
+
                 errors.append(
                     f"❌ PRECISION ERROR: Quantity {quantity} not aligned with step size {step_size} "
                     + f"({decimal_places} decimal places). SUGGESTED: {suggested_qty:.{decimal_places}f}"
@@ -468,6 +559,9 @@ class OrderValidator:
         if not price_filter:
             return errors
 
+        # Use Decimal for robust precision math
+        from decimal import ROUND_HALF_UP, Decimal
+
         min_price = float(price_filter.get("minPrice", 0))
         max_price = float(price_filter.get("maxPrice", float("inf")))
         tick_size = float(price_filter.get("tickSize", 0))
@@ -478,9 +572,12 @@ class OrderValidator:
             if max_price > 0 and price > max_price:
                 errors.append(f"Price ${price:,.8f} above maximum ${max_price:,.8f}")
             if tick_size > 0:
-                # Use proper floating point comparison for tick size alignment
-                remainder = abs(price % tick_size)
-                if remainder > 1e-8 and abs(remainder - tick_size) > 1e-8:
+                # Decimal-based tick alignment
+                p_dec = Decimal(str(price))
+                tick_dec = Decimal(str(tick_size))
+                ticks = (p_dec / tick_dec).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+                aligned = ticks * tick_dec
+                if aligned != p_dec:
                     errors.append(f"Price ${price:,.8f} not aligned with tick size ${tick_size:,.8f}")
 
         return errors
