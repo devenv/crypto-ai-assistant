@@ -57,7 +57,7 @@ class AIContextGenerator:
 
         # Combine all context sections with enhanced risk-first approach
         context = f"""
-🚨 PORTFOLIO CONCENTRATION RISK ANALYSIS (PRIORITY 1):
+🚨 PORTFOLIO CONCENTRATION ANALYSIS (CONTEXTUAL):
 {concentration_analysis}
 
 🛡️ PROTECTION ANALYSIS (CRITICAL FOR RECOMMENDATIONS):
@@ -90,16 +90,15 @@ Required Elements: Specific support/resistance levels, breakout triggers, risk/r
 {formatted_orders}
 
 🚨 ENHANCED AI GUIDANCE RULES (RISK-FIRST APPROACH):
-1. CONCENTRATION RISK: Address any >40% allocation violations BEFORE opportunities
+1. RISK CONTEXT: Prioritize protection and feasibility before opportunities
 2. MACRO FOUNDATION: Include Fear & Greed Index, institutional flows, Bitcoin dominance
 3. TECHNICAL PRECISION: Provide specific levels for minimum 7 major altcoins
 4. PROTECTION ASSESSMENT: Check protection scores before recommending protection
 5. BALANCE INTERPRETATION: Use "Available" amounts for new positions only
-        6. POSITION SIZING: Limit new allocations to ≤5% per asset; prefer keeping some USDT reserves (e.g., 10–30%) when practical
-7. RISK MANAGEMENT: Prioritize portfolio compliance and protection before deployment
+6. RISK MANAGEMENT: Prefer phased entries/exits; tailor reserves to conditions
 
 🎯 ENHANCED CONTEXT QUALITY METRICS:
-- Concentration Risk Analysis: AUTOMATED ✅
+- Concentration Analysis: PROVIDED ✅
 - Protection Analysis: AUTOMATED ✅
 - Balance Analysis: AUTOMATED ✅
 - Macro Intelligence Requirements: SPECIFIED ✅
@@ -145,35 +144,34 @@ Required Elements: Specific support/resistance levels, breakout triggers, risk/r
                     for asset, value in asset_values.items():
                         allocation_pct = (value / total_value) * 100
 
-                        if allocation_pct > 40:
-                            violations.append(f"🚨 {asset}: {allocation_pct:.1f}% - EXCEEDS 40% MAXIMUM")
-                        elif allocation_pct > 30:
-                            concentration_analysis += f"⚠️ {asset}: {allocation_pct:.1f}% - Approaching concentration limit\n"
+                        # Provide contextual observations without hard caps
+                        if allocation_pct > 70:
+                            violations.append(f"🚨 {asset}: {allocation_pct:.1f}% - HIGH SINGLE-ASSET EXPOSURE")
+                        elif allocation_pct > 50:
+                            concentration_analysis += f"⚠️ {asset}: {allocation_pct:.1f}% - Elevated concentration\n"
                         elif allocation_pct > 10:
-                            concentration_analysis += f"✅ {asset}: {allocation_pct:.1f}% - Within guidelines\n"
+                            concentration_analysis += f"✅ {asset}: {allocation_pct:.1f}% - Balanced exposure\n"
 
                     if violations:
-                        concentration_analysis += "\n🚨 CRITICAL CONCENTRATION VIOLATIONS:\n"
+                        concentration_analysis += "\n🚨 HIGH CONCENTRATION OBSERVATIONS:\n"
                         for violation in violations:
                             concentration_analysis += f"{violation}\n"
-                        concentration_analysis += "\n⚠️ IMMEDIATE ACTION REQUIRED: Reduce overweight positions to <40% allocation\n"
-                        concentration_analysis += "✅ STRATEGY: Use existing sell orders or gradual rebalancing to address violations\n"
+                        concentration_analysis += "\n📝 NOTE: Consider diversification or gradual rebalancing if aligned with strategy\n"
                     else:
-                        concentration_analysis += "\n✅ CONCENTRATION COMPLIANCE: All allocations within 40% guideline\n"
+                        concentration_analysis += "\n✅ CONCENTRATION CONTEXT: No unusual concentration detected\n"
 
                     return concentration_analysis
 
             # Fallback if portfolio structure not recognized
-            return """CONCENTRATION RISK ANALYSIS:
-⚠️ Manual Review Required: Check for any asset allocation >40% of total portfolio
-🎯 Guideline: Maximum 40% allocation per asset to maintain diversification
-📊 Action: Flag any violations for immediate rebalancing attention"""
+            return """CONCENTRATION ANALYSIS:
+⚠️ Manual Review Required: Review any unusually large single-asset exposure
+📊 Action: Consider diversification if it fits current strategy and market context"""
 
         except Exception as e:
-            return f"""CONCENTRATION RISK ANALYSIS:
+            return f"""CONCENTRATION ANALYSIS:
 ⚠️ Analysis Error: {str(e)}
-🎯 Manual Check Required: Verify no asset exceeds 40% allocation
-📊 Risk Management: Address any concentration violations before new deployment"""
+📝 Manual Check: Review concentration context and alignment with strategy
+📊 Risk Management: Address concentration if it meaningfully increases risk"""
 
     @staticmethod
     def _generate_protection_analysis(portfolio_data: dict[str, Any], market_data: dict[str, Any], order_data: list[dict[str, Any]]) -> str:

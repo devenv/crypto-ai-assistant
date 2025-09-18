@@ -137,6 +137,10 @@ class OrderService:
                 self._validate_required_params(order_type, None, stop_price)
                 assert stop_price is not None  # Type assertion after validation
                 order = self._place_take_profit_order(symbol, side, quantity, stop_price)
+            elif order_type == OrderType.STOP_LOSS_LIMIT:
+                self._validate_required_params(order_type, price, stop_price)
+                assert price is not None and stop_price is not None
+                order = self._place_stop_loss_limit_order(symbol, side, quantity, price, stop_price)
             elif order_type == OrderType.OCO:
                 self._validate_required_params(order_type, price, stop_price)
                 assert price is not None and stop_price is not None  # Type assertion after validation
@@ -219,16 +223,50 @@ class OrderService:
         """Place a take profit order."""
         return self._client.place_take_profit_order(symbol=symbol, side=side, quantity=quantity, stop_price=stop_price)
 
+    def _place_stop_loss_limit_order(self, symbol: str, side: OrderSide, quantity: float, price: float, stop_price: float) -> Order:
+        """Place a STOP_LOSS_LIMIT order with precision formatting."""
+        formatted_qty, formatted_price = self._precision_formatter.format_limit_params(symbol, quantity, price)
+        formatted_stop = self._precision_formatter.format_price(symbol, stop_price)
+        logging.info(
+            f"STOP_LOSS_LIMIT order validated and formatted: qty {quantity} → {formatted_qty}, limit {price} → {formatted_price}, stop {stop_price} → {formatted_stop}"
+        )
+        return self._client.place_stop_loss_limit_order(
+            symbol=symbol,
+            side=side,
+            quantity=formatted_qty,
+            price=formatted_price,
+            stop_price=formatted_stop,
+        )
+
     def _place_oco_order(self, symbol: str, quantity: float, price: float, stop_price: float) -> OcoOrder:
-        """Place an OCO order with precision formatting and detailed error handling."""
+        """Place an OCO order with precision formatting and detailed error handling.
+
+        Notes:
+            Binance Spot OCO requires both a limit leg (price) and a stop leg.
+            Many accounts require STOP_LOSS_LIMIT (with stopLimitPrice) rather than plain STOP_LOSS.
+            We therefore provide stopLimitPrice equal to the formatted stop by default to satisfy API requirements.
+        """
         formatted_qty, formatted_price, formatted_stop = self._precision_formatter.format_oco_params(symbol, quantity, price, stop_price)
         logging.info(
             f"OCO order validated and formatted: qty {quantity} → {formatted_qty}, price {price} → {formatted_price}, stop {stop_price} → {formatted_stop}"
         )
 
         try:
+            # Ensure stopLimitPrice is slightly more conservative than stopPrice for SELL OCO
+            # Use a small adjustment and re-align to tick size to satisfy Binance constraints
+            # formatted_stop is a string; convert to float before numeric adjustment
+            adjusted_stop_limit_value = max(float(formatted_stop) * 0.999, 0.0)
+            adjusted_stop_limit = self._precision_formatter.format_price(symbol, adjusted_stop_limit_value)
+
             # OCO orders are always SELL side in this implementation
-            result = self._client.place_oco_order(symbol=symbol, side=OrderSide.SELL, quantity=formatted_qty, price=formatted_price, stop_price=formatted_stop)
+            result = self._client.place_oco_order(
+                symbol=symbol,
+                side=OrderSide.SELL,
+                quantity=formatted_qty,
+                price=formatted_price,
+                stop_price=formatted_stop,
+                stop_limit_price=adjusted_stop_limit,
+            )
             return cast(OcoOrder, result)
         except APIError as api_error:
             error_details = {

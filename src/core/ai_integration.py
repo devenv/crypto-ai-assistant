@@ -139,26 +139,19 @@ def generate_risk_context() -> str:
     """
     return """🎯 RISK MANAGEMENT CONTEXT
 
-POSITION SIZING RULES:
-• Maximum single asset allocation: 40% of portfolio
-• Defensive allocation (USDT): 30-70% depending on market conditions
-• Major positions (>20%): Require priority protection
-• Small positions (<5%): Lower protection priority but monitor for opportunity
+CORE PRINCIPLES:
+• Prioritize downside protection and capital preservation
+• Consider diversification and concentration trade-offs (no hard caps)
+• Tailor sizing and reserves to market conditions and conviction
 
 STRATEGY PHASES:
 • ACCUMULATION: Higher risk tolerance, opportunistic deployment
 • CONSOLIDATION: Balanced approach, selective positioning
 • PROTECTION: Lower risk tolerance, focus on preservation
 
-RISK TOLERANCE GUIDELINES:
-• Conservative: 30-50% USDT allocation, strong protection emphasis
-• Balanced: 20-40% USDT allocation, moderate risk taking
-• Aggressive: 10-30% USDT allocation, growth-focused positioning
-
-⚠️ AI INSTRUCTION:
-• Respect these guidelines when making recommendations
-• Never recommend positions exceeding 40% allocation
-• Ensure adequate protection for major positions
+RISK CONSIDERATIONS:
+• Use protective orders where appropriate for significant positions
+• Prefer phased entries/exits over single large orders in volatile regimes
 • Consider current market regime when assessing risk"""
 
 

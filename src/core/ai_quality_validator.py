@@ -53,7 +53,7 @@ class AIQualityValidator:
 
         # Score each category
         macro_score = cls._score_macro_intelligence(text_lower)
-        concentration_score = cls._score_concentration_risk(text_lower, portfolio_data)
+        concentration_score = cls._score_concentration_context(text_lower, portfolio_data)
         technical_score = cls._score_technical_analysis(text_lower, analysis_text)
         risk_score = cls._score_risk_management(text_lower)
         actionability_score = cls._score_actionability(text_lower, analysis_text)
@@ -111,21 +111,17 @@ class AIQualityValidator:
         return score
 
     @classmethod
-    def _score_concentration_risk(cls, text_lower: str, portfolio_data: dict[str, Any] | None) -> int:
-        """Score concentration risk assessment (0-20 points)."""
+    def _score_concentration_context(cls, text_lower: str, portfolio_data: dict[str, Any] | None) -> int:
+        """Score whether concentration considerations are addressed (0-20 points)."""
         score = 0
 
-        # Check for concentration risk discussion (10 points)
+        # Check for concentration discussion (10 points)
         if any(keyword in text_lower for keyword in cls.RISK_KEYWORDS):
             score += 10
 
-        # Check for 40% guideline mention (5 points)
-        if "40%" in text_lower or "forty percent" in text_lower:
-            score += 5
-
-        # Check for overweight identification (5 points)
-        if "overweight" in text_lower or "exceed" in text_lower:
-            score += 5
+        # Check for overweight/large single-asset exposure identification (up to 10 points)
+        if "overweight" in text_lower or "rebalanc" in text_lower:
+            score += 10
 
         return score
 
@@ -271,7 +267,7 @@ class AIQualityValidator:
             suggestions.append("Include objective macro indicators: Fear & Greed Index, institutional flows, Bitcoin dominance")
 
         if score.concentration_risk < 15:
-            suggestions.append("Explicitly assess portfolio concentration risk and 40% allocation guideline compliance")
+            suggestions.append("Explicitly assess portfolio concentration risk and rebalancing considerations")
 
         if score.technical_analysis < 15:
             suggestions.append("Provide comprehensive technical analysis for 7+ major altcoins with specific price levels")

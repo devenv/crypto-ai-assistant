@@ -514,6 +514,31 @@ class BinanceClient:
         result = self._request("POST", "/api/v3/order", params=params)
         return cast(Order, result)
 
+    def place_stop_loss_limit_order(self, symbol: str, side: OrderSide, quantity: float, price: float, stop_price: float) -> Order:
+        """Places a STOP_LOSS_LIMIT order (stop triggers a limit sell/buy).
+
+        Args:
+            symbol: Trading symbol.
+            side: BUY or SELL.
+            quantity: Quantity to trade.
+            price: Limit price for the order once triggered.
+            stop_price: Stop trigger price.
+
+        Returns:
+            An `Order` TypedDict with the created order details.
+        """
+        params = {
+            "symbol": symbol,
+            "side": side.value,
+            "type": OrderType.STOP_LOSS_LIMIT.value,
+            "quantity": quantity,
+            "price": price,
+            "stopPrice": stop_price,
+            "timeInForce": TimeInForce.GTC.value,
+        }
+        result = self._request("POST", "/api/v3/order", params=params)
+        return cast(Order, result)
+
     def place_oco_order(
         self,
         symbol: str,

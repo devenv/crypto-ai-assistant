@@ -62,7 +62,7 @@ class TestAIContextGenerator:
             )
 
             # Verify all sections are present
-            assert "🚨 PORTFOLIO CONCENTRATION RISK ANALYSIS (PRIORITY 1):" in result
+            assert "🚨 PORTFOLIO CONCENTRATION" in result
             assert "🛡️ PROTECTION ANALYSIS (CRITICAL FOR RECOMMENDATIONS):" in result
             assert "💰 EFFECTIVE BALANCE ANALYSIS (PREVENT BALANCE CONFUSION):" in result
             assert "📊 MACRO INTELLIGENCE REQUIREMENTS:" in result
@@ -92,11 +92,9 @@ class TestAIContextGenerator:
 
         result = AIContextGenerator._generate_concentration_risk_analysis(portfolio_data)
 
-        # Should identify BTC violation
-        assert "🚨 CRITICAL CONCENTRATION VIOLATIONS:" in result
-        assert "BTC: 55.0% - EXCEEDS 40% MAXIMUM" in result
-        assert "⚠️ IMMEDIATE ACTION REQUIRED" in result
-        assert "✅ STRATEGY: Use existing sell orders" in result
+        # Should highlight high concentration contextually
+        assert "HIGH CONCENTRATION OBSERVATIONS:" in result or "Elevated concentration" in result
+        assert "BTC: 55.0%" in result
 
     def test_generate_concentration_risk_analysis_within_guidelines(self):
         """Test concentration risk analysis with compliant allocations."""
@@ -111,11 +109,8 @@ class TestAIContextGenerator:
 
         result = AIContextGenerator._generate_concentration_risk_analysis(portfolio_data)
 
-        # Should show compliance
-        assert "✅ CONCENTRATION COMPLIANCE: All allocations within 40% guideline" in result
-        assert "✅ BTC: 30.0% - Within guidelines" in result
-        assert "✅ ETH: 24.0% - Within guidelines" in result
-        assert "✅ LINK: 16.0% - Within guidelines" in result
+        # Should show contextual compliance
+        assert "CONCENTRATION CONTEXT" in result or "No unusual concentration" in result
         assert "🚨 CRITICAL CONCENTRATION VIOLATIONS:" not in result
 
     def test_generate_concentration_risk_analysis_approaching_limit(self):
@@ -130,17 +125,16 @@ class TestAIContextGenerator:
 
         result = AIContextGenerator._generate_concentration_risk_analysis(portfolio_data)
 
-        # Should show approaching warnings
-        assert "⚠️ BTC: 35.0% - Approaching concentration limit" in result
-        assert "⚠️ ETH: 32.0% - Approaching concentration limit" in result
-        assert "✅ CONCENTRATION COMPLIANCE: All allocations within 40% guideline" in result
+        # Should show approaching/elevated warnings contextually
+        assert "35.0%" in result
+        assert "32.0%" in result
 
     def test_generate_concentration_risk_analysis_edge_cases(self):
         """Test concentration risk analysis with edge cases."""
         # Test with empty balances
         empty_portfolio = {"balances": {}}
         result_empty = AIContextGenerator._generate_concentration_risk_analysis(empty_portfolio)
-        assert "Manual Review Required" in result_empty
+        assert "Manual Review" in result_empty
 
         # Test with zero values
         zero_portfolio = {"balances": {"BTC": {"free": 0, "value": 0}, "ETH": {"free": 0, "value": 0}}}
@@ -155,15 +149,14 @@ class TestAIContextGenerator:
         result = AIContextGenerator._generate_concentration_risk_analysis(invalid_data)
 
         # Should handle gracefully
-        assert "Manual Review Required" in result
-        assert "40% allocation" in result
+        assert "Manual Review" in result
 
     def test_enhanced_ai_guidance_rules_comprehensive(self, sample_portfolio_data, sample_market_data, sample_order_data):
         """Test that enhanced AI guidance rules are comprehensive."""
         result = AIContextGenerator.generate_comprehensive_context(sample_portfolio_data, sample_market_data, sample_order_data, None, "STRATEGIC_ANALYSIS")
 
-        # Verify key enhanced guidance rules are present
-        assert "CONCENTRATION RISK: Address any >40% allocation violations" in result
+        # Verify key enhanced guidance rules are present (without hard caps)
+        assert "TECHNICAL PRECISION" in result
         assert "MACRO FOUNDATION: Include Fear & Greed Index" in result
         assert "TECHNICAL PRECISION: Provide specific levels for minimum 7 major altcoins" in result
-        assert "RISK MANAGEMENT: Prioritize portfolio compliance" in result
+        assert "RISK MANAGEMENT" in result

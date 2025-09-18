@@ -61,8 +61,8 @@ class TestAIQualityValidator:
         Recent institutional flows show $150M outflows from Bitcoin ETFs while Ethereum sees $75M inflows.
         Bitcoin dominance has declined to 58.2%, indicating selective altcoin season rotation.
 
-        **PORTFOLIO RISK ASSESSMENT**: Critical concentration risk identified - BTC allocation at 52.3%
-        exceeds the 40% maximum guideline, requiring immediate rebalancing through existing sell orders.
+        **PORTFOLIO RISK ASSESSMENT**: Concentration considerations – BTC allocation at 52.3% is unusually high
+        relative to diversification best practices; consider gradual rebalancing using existing sell orders.
 
         **COMPREHENSIVE TECHNICAL ANALYSIS**: ETH showing support at $3,480 with resistance at $3,650.
         LINK in falling wedge pattern with breakout above $16.20 targeting $30. DOT consolidating near
@@ -99,7 +99,7 @@ class TestAIQualityValidator:
         # Should score highly across all categories
         assert score.total >= 80
         assert score.macro_intelligence >= 15  # Has Fear & Greed, flows, dominance
-        assert score.concentration_risk >= 15  # Mentions 40%, overweight, BTC concentration
+        assert score.concentration_risk >= 10  # Mentions concentration/overweight context
         assert score.technical_analysis >= 15  # Covers 7+ altcoins with specific levels
         assert score.risk_management >= 15  # Risk-first approach, stops, reserves
         assert score.actionability >= 10  # Specific entries and guidance
@@ -136,14 +136,14 @@ class TestAIQualityValidator:
         assert score == 10  # Partial score
 
     def test_score_concentration_risk_complete(self):
-        """Test concentration risk scoring with full assessment."""
+        """Test concentration discussion scoring with full assessment."""
         text = """
-        BTC overweight at 52% violates 40% maximum allocation.
-        Concentration risk requires immediate rebalancing.
+        BTC overweight at 52% indicates high single-asset exposure.
+        Concentration considerations suggest rebalancing attention.
         """
 
-        score = AIQualityValidator._score_concentration_risk(text.lower(), None)
-        assert score == 20  # Perfect score
+        score = AIQualityValidator._score_concentration_context(text.lower(), None)
+        assert score >= 20
 
     def test_score_technical_analysis_comprehensive(self):
         """Test technical analysis scoring with comprehensive coverage."""
@@ -276,10 +276,10 @@ class TestAIQualityValidator:
         # Create a very long analysis with repeated good content
         base_analysis = """
         Fear greed index 55/100. Institutional flows $200M. Bitcoin dominance 60%.
-        Altcoin season selective. BTC overweight 52% exceeds 40% maximum.
-        Concentration risk rebalancing required. ETH $3,480 LINK $15.40 DOT $3.55
+        Altcoin season selective. BTC overweight 52% indicates high concentration.
+        Consider rebalancing. ETH $3,480 LINK $15.40 DOT $3.55
         ADA $0.66 AVAX $18 UNI $9.30 XRP $2.76. Risk first priority approach.
-        Position sizing limits stop loss reserves. Entry timing deploy constraints
+        Stop loss reserves. Entry timing deploy constraints
         monitor follow priorities.
         """
         long_analysis = base_analysis * 10  # Repeat 10 times

@@ -204,12 +204,8 @@ class TestAIIntegration:
         result = generate_risk_context()
 
         assert "🎯 RISK MANAGEMENT CONTEXT" in result
-        assert "POSITION SIZING RULES:" in result
-        assert "Maximum single asset allocation: 40%" in result
         assert "STRATEGY PHASES:" in result
-        assert "RISK TOLERANCE GUIDELINES:" in result
-        assert "⚠️ AI INSTRUCTION:" in result
-        assert "Never recommend positions exceeding 40% allocation" in result
+        assert "RISK CONSIDERATIONS:" in result
 
     def test_generate_recent_activity_context(self, mock_account_service: Mock) -> None:
         """Test recent activity context generation."""
@@ -323,8 +319,8 @@ class TestAIQualityValidation:
         Institutional flows: $150M outflows from BTC ETFs, $75M inflows to ETH.
         Bitcoin dominance declined to 58.2% enabling altcoin season rotation.
 
-        **PORTFOLIO RISK ASSESSMENT**: BTC allocation 52.3% exceeds 40% maximum.
-        Concentration risk requires rebalancing via existing sell orders.
+        **PORTFOLIO RISK ASSESSMENT**: BTC allocation 52.3% indicates high concentration.
+        Consider rebalancing via existing sell orders.
 
         **COMPREHENSIVE TECHNICAL ANALYSIS**:
         ETH: Support $3,480, resistance $3,650
@@ -426,8 +422,8 @@ class TestAIQualityValidation:
     def test_validate_and_enhance_analysis_with_portfolio_context(self) -> None:
         """Test validation with portfolio context for concentration analysis."""
         analysis_with_concentration = """
-        BTC allocation at 55% exceeds maximum 40% guideline.
-        Overweight position requires rebalancing attention.
+        BTC allocation at 55% indicates high concentration.
+        Overweight position suggests rebalancing attention.
         """
 
         portfolio_data = {"balances": {"BTC": {"free": 1.0, "value": 55000}, "USDT": {"free": 45000, "value": 45000}}}

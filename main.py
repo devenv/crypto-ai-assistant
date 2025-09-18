@@ -6,7 +6,9 @@ market analysis and automated trading decisions.
 """
 
 import functools
+import json
 import logging
+import os
 import sys
 from collections.abc import Callable
 from datetime import datetime
@@ -55,6 +57,31 @@ from core.orders import OrderService  # noqa: E402
 from core.perplexity_service import PerplexityService  # noqa: E402
 from core.validation_service import AIRecommendation, ValidationService  # noqa: E402
 
+
+# --- Console / Encoding Configuration ---
+# Ensure UTF-8 output even on legacy Windows codepages to avoid UnicodeEncodeError (e.g., emojis)
+def _configure_console_encoding() -> None:
+    """Configure stdout/stderr for UTF-8 with safe error handling.
+
+    On some Windows terminals (cp1252), printing emoji/unicode via Rich can raise
+    UnicodeEncodeError. Reconfigure streams to UTF-8 and replace un-encodable chars.
+    """
+    try:
+        # Environment hints for Python I/O
+        os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+        os.environ.setdefault("PYTHONUTF8", "1")
+        # Reconfigure stdio if supported (Python 3.7+)
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        # Best-effort; avoid failing app startup over encoding setup
+        pass
+
+
+_configure_console_encoding()
+
 # --- Main Typer App ---
 app = typer.Typer(
     name="crypto-ai-assistant",
@@ -69,6 +96,7 @@ exchange_app = typer.Typer(name="exchange", help="Get exchange information.", no
 analysis_app = typer.Typer(name="analysis", help="Run technical analysis.", no_args_is_help=True)
 validate_app = typer.Typer(name="validate", help="Validate trading recommendations.", no_args_is_help=True)
 ai_app = typer.Typer(name="ai", help="AI-powered portfolio analysis and recommendations.", no_args_is_help=True)
+queue_app = typer.Typer(name="queue", help="Manage AI Action Tickets queue.", no_args_is_help=True)
 
 app.add_typer(account_app)
 app.add_typer(order_app)
@@ -76,10 +104,12 @@ app.add_typer(exchange_app)
 app.add_typer(analysis_app)
 app.add_typer(validate_app)
 app.add_typer(ai_app)
+app.add_typer(queue_app)
 
 
 # --- Rich Console for Output ---
-console = Console()
+# Disable legacy Windows path to prevent cp1252 write path; rely on UTF-8 stdio above
+console = Console(legacy_windows=False, soft_wrap=True)
 
 # --- Global State ---
 # Using a dictionary for state to be explicit and avoid global variables
@@ -138,6 +168,25 @@ def _get_current_timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _load_queue(path: Path) -> dict[str, Any]:
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return cast(dict[str, Any], json.load(f))
+    except FileNotFoundError:
+        return {"generated_at": _get_current_timestamp(), "tickets": []}
+    except Exception as err:
+        console.print(f"❌ [red]Failed to load queue:[/red] {err}")
+        return {"generated_at": _get_current_timestamp(), "tickets": []}
+
+
+def _save_queue(path: Path, data: dict[str, Any]) -> None:
+    try:
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as err:
+        console.print(f"❌ [red]Failed to save queue:[/red] {err}")
+
+
 def _print_strategy_prompts(
     portfolio_data: str,
     market_data: str,
@@ -146,10 +195,12 @@ def _print_strategy_prompts(
     balance_analysis: str | None = None,
     risk_context: str | None = None,
     recent_activity_context: str | None = None,
+    budget_context: str | None = None,
+    order_commitments_summary: str | None = None,
 ) -> None:
     """Generate and print strategy analysis prompts for external AI services."""
 
-    # Generate comprehensive system prompt
+    # Generate comprehensive system prompt (Optimized for Perplexity Space)
     system_prompt = """You are an expert crypto portfolio strategist with COMPREHENSIVE MARKET INTELLIGENCE capabilities. Analyze from both institutional and community perspectives to provide balanced, multi-dimensional market insights.
 
 🎯 YOUR COMPREHENSIVE ANALYSIS ROLE:
@@ -159,19 +210,61 @@ def _print_strategy_prompts(
 - Combine exchange data with on-chain metrics and social sentiment
 - Provide strategic reasoning from multiple market perspectives
 
-🔍 MULTI-PERSPECTIVE SOURCE FOCUS:
-**INSTITUTIONAL & PROFESSIONAL:**
+🔍 MANDATORY MULTI-SOURCE ANALYSIS:
+**INSTITUTIONAL & PROFESSIONAL SOURCES:**
 - Bloomberg, Reuters, institutional research reports
 - ETF flows, corporate treasury activities, regulatory developments
 - Professional trader sentiment and whale movement analysis
+- Fund positioning and macro trend analysis
 
-**COMMUNITY & SENTIMENT:**
+**COMMUNITY & SENTIMENT SOURCES:**
 - Twitter/X crypto sentiment, Reddit discussions
 - On-chain analytics, social sentiment tracking
 - Grassroots adoption metrics and viral market narratives
+- Meme trends and retail FOMO/FUD patterns
 
-ANALYSIS APPROACH:
-Provide comprehensive market analysis covering both professional/institutional perspectives AND community/sentiment dynamics. Balance data from financial institutions with grassroots indicators. Emphasize where institutional and retail perspectives align or diverge, and what this means for market direction.
+📊 REQUIRED OUTPUT STRUCTURE:
+Present findings in parallel sections with clear attribution:
+- "Institutional Consensus" vs "Community Sentiment" tables
+- Direct quotes and source citations for all key claims
+- Cross-verification requirements (minimum 2 independent sources)
+- Mark speculative or low-confidence predictions explicitly
+
+🎯 COMPREHENSIVE TECHNICAL ANALYSIS REQUIREMENTS:
+- **MINIMUM COVERAGE**: Analyze at least 7 major altcoins (ETH, LINK, DOT, ADA, AVAX, UNI, XRP)
+- **CONFLUENCE FACTORS**: Support/resistance levels with volume, MA crossover, orderbook activity
+- **BREAKOUT TRIGGERS**: Specific price + volume thresholds or external catalysts
+- **MULTI-TIMEFRAME**: Daily, 4h, and weekly analysis with most significant levels highlighted
+- **RISK MANAGEMENT**: Stop loss guidance and risk/reward ratios for each opportunity
+
+🚨 MANDATORY MACRO INTELLIGENCE (CRITICAL FOUNDATION):
+1. **Fear & Greed Index**: Current level with interpretation and trend analysis
+2. **Institutional Flows**: Recent fund flows, ETF activity, whale movements with data sources
+3. **Bitcoin Dominance**: Current percentage, trend implications, and sector rotation signals
+4. **Market Structure**: Altcoin Season Index, sector performance, capital flow patterns
+
+📈 SECTOR ROTATION ANALYSIS REQUIREMENTS:
+- Evaluate AI tokens, DeFi, L1, meme coins performance over last quarter
+- Identify catalysts, capital flows, and cross-sector performance relative to BTC
+- Present historical sector performance timeline with upcoming event triggers
+- Flag leading/lagging sectors with specific data points
+
+🎯 ACTIONABLE TRADING RECOMMENDATIONS FORMAT:
+For each opportunity, provide:
+- Entry zone (support/resistance levels)
+- Trigger condition (price/volume/on-chain catalyst)
+- Risk management (stop loss, position sizing guideline)
+- Risk/reward ratio calculation
+- Rationale (referenced from both analyst and community inputs)
+- Scenario planning (breakdown/breakout adjustments)
+
+📊 QUALITY REQUIREMENTS:
+- All key levels must be substantiated with at least 2 independent sources
+- Attribute all claims to specific institutional/community sources
+- Highlight data conflicts or uncovered risks
+- Mark speculative predictions as low-confidence
+- Include limitations and data gaps disclosure
+- Present in well-labeled tables and parallel sections
 
 🚫 NOT YOUR ROLE (Technical data provided by our systems):
 - Fetching current prices or technical indicators
@@ -180,77 +273,7 @@ Provide comprehensive market analysis covering both professional/institutional p
 - Performing precision calculations or validation
 - Providing specific order commands or exact trade instructions
 
-🚨 MANDATORY MACRO INTELLIGENCE (CRITICAL FOUNDATION):
-1. **Fear & Greed Index**: Research current Crypto Fear & Greed Index level and interpretation
-2. **Institutional Flows**: Analyze recent institutional fund flows, ETF activity, and whale movements
-3. **Bitcoin Dominance**: Current Bitcoin dominance percentage and trend implications
-4. **Market Structure**: Altcoin Season Index, sector rotation patterns, and market cap flows
-
-📊 PORTFOLIO CONCENTRATION RISK ASSESSMENT (PRIORITY 1):
-- **CRITICAL**: Check for any asset allocation >40% of total portfolio value
-- **FLAG VIOLATIONS**: Explicitly identify concentration risk issues requiring rebalancing
-- **RISK MANAGEMENT**: Address concentration concerns before opportunity identification
-- **COMPLIANCE**: Ensure recommendations respect 40% maximum allocation guideline
-
-🎯 COMPREHENSIVE TECHNICAL ANALYSIS REQUIREMENTS:
-- **MINIMUM COVERAGE**: Analyze at least 7 major altcoins (ETH, LINK, DOT, ADA, AVAX, UNI, XRP)
-- **SPECIFIC LEVELS**: Provide exact support and resistance levels with confluence factors
-- **BREAKOUT TRIGGERS**: Identify precise breakout levels and volume confirmation requirements
-- **RISK/REWARD**: Calculate specific stop-loss and target levels for each opportunity
-
-STRATEGIC ANALYSIS REQUIREMENTS:
-1. **Market Sentiment Analysis**: Research current market mood and sentiment drivers
-2. **News & Events Impact**: Analyze recent developments affecting market direction
-3. **Market Regime Assessment**: Identify current market cycle phase and transition signals
-4. **Sector Analysis**: Evaluate crypto sector dynamics and rotation patterns
-5. **Strategic Timing**: Provide insights on optimal timing for position adjustments
-6. **Risk Assessment**: Evaluate current risk environment and positioning guidance
-
-CRITICAL PROTECTION ASSESSMENT GUIDANCE:
-- Review provided protection coverage scores and existing orders
-- If protection score >70, note that protection is adequate
-- Focus analysis on assets with poor protection scores (<50) that may need attention
-- Understand that low "available balance" often indicates good existing protection
-
-EFFECTIVE BALANCE UNDERSTANDING:
-- Available balance ≠ total balance (some committed to protective orders)
-- Low available balance for an asset often means GOOD protection exists
-- Focus deployment recommendations on truly available funds only
-
-🎯 RISK-FIRST ANALYSIS OUTPUT FORMAT:
-Provide strategic analysis in clear sections prioritizing risk management:
-
-**MACRO FOUNDATION**: Fear & Greed Index, institutional flows, Bitcoin dominance analysis
-
-**PORTFOLIO RISK ASSESSMENT**: Concentration risk evaluation, allocation compliance review
-
-**COMPREHENSIVE TECHNICAL ANALYSIS**: 7+ major altcoins with specific support/resistance levels
-
-**MARKET SENTIMENT & REGIME**: Current market mood, cycle phase, sentiment drivers
-
-**NEWS & CATALYST ANALYSIS**: Recent developments affecting market direction
-
-**SECTOR ROTATION INSIGHTS**: Which crypto sectors show strength/weakness patterns
-
-**RISK MANAGEMENT PRIORITIES**: Address concentration violations and protection gaps first
-
-**STRATEGIC OPPORTUNITIES**: Conservative deployment recommendations respecting risk limits
-
-**TIMING CONSIDERATIONS**: Optimal timing for any position adjustments
-
-**DEPLOYMENT CONSTRAINTS**: Position sizing limits and reserve requirements
-
-**FOLLOW-UP PRIORITIES**: Key developments to monitor
-
-    📊 ANALYSIS QUALITY REQUIREMENTS:
-- Must include objective macro indicators (Fear & Greed, flows, dominance)
-- Must identify portfolio concentration risks explicitly
-- Must provide specific technical levels for minimum 7 altcoins
-- Must prioritize risk management before opportunity identification
-    - Must recommend conservative position sizing (≤5% new allocations per asset)
-    - Prefer maintaining some USDT reserves (e.g., 10–30%) when practical; flexibility allowed based on strategy and market conditions
-
-Focus on risk-first strategic insights that prioritize portfolio protection and compliance with allocation guidelines."""
+Focus on risk-first strategic insights that prioritize portfolio protection with comprehensive, multi-source analysis and actionable recommendations."""
 
     # Build enhanced user prompt with all available context
     user_prompt_parts = [
@@ -303,6 +326,25 @@ Focus on risk-first strategic insights that prioritize portfolio protection and 
             ]
         )
 
+    # Add budget context and order commitments summary
+    if budget_context:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**BUDGET CONTEXT (for sizing & reserves):**",
+                budget_context,
+            ]
+        )
+
+    if order_commitments_summary:
+        user_prompt_parts.extend(
+            [
+                "",
+                "**ORDER COMMITMENTS SUMMARY (USDT notional locked in buys):**",
+                order_commitments_summary,
+            ]
+        )
+
     # Add streamlined analysis requirements
     user_prompt_parts.extend(
         [
@@ -323,21 +365,315 @@ Focus on risk-first strategic insights that prioritize portfolio protection and 
 
     # Display the prompts
     console.print("\n" + "=" * 100)
-    console.print("🤖 [bold yellow]SYSTEM PROMPT FOR EXTERNAL AI (Copy this first):[/bold yellow]")
+    console.print("🔧 [bold yellow]PERMANENTLY SET SYSTEM PROMPT (For Reference):[/bold yellow]")
     console.print("=" * 100)
     console.print(system_prompt)
 
     console.print("\n" + "=" * 100)
-    console.print("👤 [bold cyan]USER PROMPT FOR EXTERNAL AI (Copy this second):[/bold cyan]")
+    console.print("👤 [bold cyan]USER PROMPT (Copy this to Perplexity Space):[/bold cyan]")
     console.print("=" * 100)
     console.print(user_prompt)
     console.print("=" * 100)
 
     console.print("\n📋 [bold green]USAGE INSTRUCTIONS:[/bold green]")
-    console.print("1. Copy the SYSTEM PROMPT above and paste it into your AI service")
-    console.print("2. Copy the USER PROMPT above and paste it as your question")
-    console.print("3. Send both prompts to get comprehensive strategic analysis")
+    console.print("1. Copy the USER PROMPT above and paste it into Perplexity Space (system prompt already set)")
+    console.print("2. Send the prompt to get comprehensive strategic analysis")
+    console.print("3. Paste the AI response back here when ready")
     console.print("4. Use the analysis with crypto-workflow.md Step 2 (evaluation) and beyond")
+
+
+@queue_app.command("list")
+def queue_list() -> None:
+    """List Action Tickets from orders_queue.json in a table."""
+    path = Path("orders_queue.json")
+    data = _load_queue(path)
+    tickets: list[dict[str, Any]] = cast(list[dict[str, Any]], data.get("tickets", []))
+
+    table = Table(title="Action Tickets Queue")
+    table.add_column("ID", style="cyan")
+    table.add_column("Symbol", style="magenta")
+    table.add_column("Side", style="yellow")
+    table.add_column("Trigger", style="green")
+    table.add_column("Max %", style="blue", justify="right")
+    table.add_column("Status", style="white")
+    table.add_column("OrderId", style="dim")
+
+    for t in tickets:
+        table.add_row(
+            str(t.get("id", "")),
+            str(t.get("symbol", "")),
+            str(t.get("side", "")),
+            str(t.get("trigger_type", "")),
+            f"{t.get('size_pct_max', '')}",
+            str(t.get("status", "pending")),
+            str(t.get("placed_order_id", "")),
+        )
+
+    console.print(table)
+
+
+@queue_app.command("show")
+def queue_show(ticket_id: str = typer.Argument(..., help="Ticket ID (e.g., T-ETH-001)")) -> None:
+    """Show full details for a specific Action Ticket."""
+    path = Path("orders_queue.json")
+    data = _load_queue(path)
+    tickets: list[dict[str, Any]] = cast(list[dict[str, Any]], data.get("tickets", []))
+    ticket = next((t for t in tickets if str(t.get("id")) == ticket_id), None)
+    if not ticket:
+        console.print(f"❌ [red]Ticket not found:[/red] {ticket_id}")
+        raise typer.Exit(code=1)
+
+    # Pretty print JSON
+    console.print_json(data=ticket)
+
+
+@queue_app.command("reject")
+def queue_reject(ticket_id: str = typer.Argument(..., help="Ticket ID to reject")) -> None:
+    """Reject (remove) a pending Action Ticket."""
+    path = Path("orders_queue.json")
+    data = _load_queue(path)
+    tickets: list[dict[str, Any]] = cast(list[dict[str, Any]], data.get("tickets", []))
+    new_tickets: list[dict[str, Any]] = []
+    removed = False
+    for t in tickets:
+        if str(t.get("id")) == ticket_id and str(t.get("status", "pending")) == "pending":
+            removed = True
+            continue
+        new_tickets.append(t)
+    data["tickets"] = new_tickets
+    _save_queue(path, data)
+    if removed:
+        console.print(f"✅ [green]Rejected and removed ticket:[/green] {ticket_id}")
+    else:
+        console.print(f"ℹ️ [yellow]No pending ticket removed (check ID/status):[/yellow] {ticket_id}")
+
+
+@queue_app.command("attach-protection")
+def queue_attach_protection(ticket_id: str = typer.Argument(..., help="Ticket ID to attach protection for")) -> None:
+    """Attach protection (SL or OCO SELL) for an approved BUY ticket based on ticket fields."""
+    path = Path("orders_queue.json")
+    data = _load_queue(path)
+    tickets: list[dict[str, Any]] = cast(list[dict[str, Any]], data.get("tickets", []))
+    ticket = next((t for t in tickets if str(t.get("id")) == ticket_id), None)
+    if not ticket:
+        console.print(f"❌ [red]Ticket not found:[/red] {ticket_id}")
+        raise typer.Exit(code=1)
+
+    symbol = str(ticket.get("symbol"))
+    side = str(ticket.get("side", "BUY")).upper()
+    placed = cast(dict[str, Any], ticket.get("placed_order", {}))
+    if side != "BUY" or not placed:
+        console.print("ℹ️ [yellow]Protection attach is only supported for approved BUY tickets with a placed order.")
+        raise typer.Exit(code=1)
+
+    qty = float(placed.get("qty", 0))
+    if qty <= 0:
+        console.print("❌ [red]Invalid quantity in placed order.")
+        raise typer.Exit(code=1)
+
+    # Determine stop/take profit from ticket if available
+    stop_val: float | None = None
+    tps = cast(list[dict[str, Any]], ticket.get("take_profits", []))
+    # Try to parse numeric from ticket.stop and first tp.tp
+    import re
+
+    stop_field = str(ticket.get("stop", ""))
+    m_stop = re.search(r"(\d+(?:\.\d+)?)", stop_field)
+    if m_stop:
+        stop_val = float(m_stop.group(1))
+    tp_val: float | None = None
+    if tps:
+        m_tp = re.search(r"(\d+(?:\.\d+)?)", str(tps[0].get("tp", "")))
+        if m_tp:
+            tp_val = float(m_tp.group(1))
+
+    order_service = OrderService(get_client())
+
+    # Prefer OCO if we have both stop and tp, else place SL only
+    try:
+        if stop_val and tp_val:
+            result = order_service.place_order(
+                symbol=symbol,
+                side=OrderSide.SELL,
+                order_type=OrderType.OCO,
+                quantity=qty,
+                price=tp_val,
+                stop_price=stop_val,
+            )
+            _display_order_confirmation(cast(OcoOrder, result))
+            console.print("✅ [green]Attached OCO protection (TP + SL).")
+        elif stop_val:
+            result = order_service.place_order(
+                symbol=symbol,
+                side=OrderSide.SELL,
+                order_type=OrderType.STOP_LOSS_LIMIT,
+                quantity=qty,
+                price=stop_val,  # limit leg
+                stop_price=stop_val,
+            )
+            _display_order_confirmation(cast(Order, result))
+            console.print("✅ [green]Attached STOP_LOSS_LIMIT protection.")
+        else:
+            console.print("ℹ️ [yellow]No numeric stop/tp found in ticket; skipping protection.")
+            raise typer.Exit(code=1)
+    except Exception as err:
+        console.print(f"❌ [red]Failed to attach protection:[/red] {err}")
+        raise typer.Exit(code=1) from None
+
+
+@queue_app.command("approve")
+def queue_approve(
+    ticket_id: str = typer.Argument(..., help="Ticket ID to approve and place order"),
+    price_override: float = typer.Option(None, "--price", help="Override limit price for this approval"),
+) -> None:
+    """Approve a pending Action Ticket and place the corresponding order.
+
+    This parses the ticket, validates safety caps, and places a LIMIT order if an explicit
+    price hint exists; otherwise, it will create a simulated candidate and print guidance.
+    """
+    path = Path("orders_queue.json")
+    data = _load_queue(path)
+    tickets: list[dict[str, Any]] = cast(list[dict[str, Any]], data.get("tickets", []))
+    ticket = next((t for t in tickets if str(t.get("id")) == ticket_id), None)
+    if not ticket:
+        console.print(f"❌ [red]Ticket not found:[/red] {ticket_id}")
+        raise typer.Exit(code=1)
+
+    status = str(ticket.get("status", "pending"))
+    if status not in {"pending", "approved"}:
+        console.print(f"ℹ️ [yellow]Ticket not approvable in status:[/yellow] {status}")
+        raise typer.Exit(code=1)
+
+    symbol = str(ticket.get("symbol"))
+    side = str(ticket.get("side", "BUY")).upper()
+    size_pct_max = float(ticket.get("size_pct_max", 0))
+    entry_hint = str(ticket.get("entry_hint", "")).strip()
+
+    # Load services
+    account_service = AccountService(get_client())
+    order_service = OrderService(get_client())
+
+    # Safety caps
+    safety = cast(dict[str, Any], data.get("safety_caps", {}))
+    min_reserve_pct = float(safety.get("min_usdt_reserve_pct", 30))
+    per_run_cap_pct = float(safety.get("per_run_spend_cap_pct", 10))
+
+    # Compute available USDT and cap sizing (use tuple return correctly)
+    available_usdt, commitments_ctx = account_service.get_effective_available_balance("USDT")
+    committed_buy_usdt = float(commitments_ctx.get("buy_orders", 0.0))
+    effective_usdt = float(available_usdt)
+    # total free usdt before commitments = available + committed
+    total_usdt = float(available_usdt + committed_buy_usdt)
+    reserve_target = (min_reserve_pct / 100.0) * total_usdt
+    spendable = max(0.0, effective_usdt - reserve_target)
+    per_run_cap = (per_run_cap_pct / 100.0) * max(total_usdt, 1.0)
+    budget = min(spendable, per_run_cap)
+
+    if budget <= 0:
+        console.print("❌ [red]Approval blocked by safety budget.[/red]")
+        console.print("\n[bold]Budget Breakdown[/bold]")
+        console.print(f"• raw_free_usdt≈{total_usdt:.2f} (available + committed_buy)")
+        console.print(f"• committed_buy_usdt≈{committed_buy_usdt:.2f}")
+        console.print(f"• effective_available≈{effective_usdt:.2f}")
+        console.print(f"• reserve_target({min_reserve_pct:.0f}%)≈{reserve_target:.2f}")
+        console.print(f"• spendable_after_reserve≈{spendable:.2f}")
+        console.print(f"• per_run_cap({per_run_cap_pct:.0f}%)≈{per_run_cap:.2f}")
+        console.print(f"• ticket_cap({size_pct_max:.1f}%)≈{(size_pct_max / 100.0) * max(total_usdt, 1.0):.2f}")
+        console.print(f"• final_budget≈{budget:.2f}")
+        console.print("\n[bold yellow]Suggestions[/bold yellow]:")
+        console.print("1) Free USDT by canceling/downsizing pending BUY orders.")
+        console.print("2) Temporarily lower reserve (e.g., --reserve 20) to unlock budget.")
+        console.print("3) Use one-off --override-budget on this approval (not yet implemented).")
+        raise typer.Exit(code=1)
+
+    # Heuristic quantity sizing using EMA10 price from indicators (if available)
+    if price_override is not None and price_override > 0:
+        price = float(price_override)
+    else:
+        try:
+            indicator_service = IndicatorService(get_client(), get_app_config())
+            indicators = indicator_service.calculate_indicators([symbol.replace("USDT", "")])
+            base = symbol.replace("USDT", "")
+            price = float(indicators[base].get("ema10") or indicators[base].get("current_price"))
+        except Exception:
+            price = 0.0
+
+    if price <= 0:
+        console.print("ℹ️ [yellow]Price context unavailable; using entry hint if numeric.")
+        # Try extract numeric from entry_hint
+        import re
+
+        m = re.search(r"(\d+(?:\.\d+)?)", entry_hint)
+        price = float(m.group(1)) if m else 0.0
+
+    if price <= 0:
+        # Fallback: try exchange ticker last price
+        try:
+            ExchangeService(get_client())
+            info = get_client().get_ticker_price(symbol)
+            price = float(info.get("price", 0)) if info else 0.0
+        except Exception:
+            price = 0.0
+    if price <= 0:
+        console.print("❌ [red]Cannot determine a reasonable price (indicators, hint, and ticker failed).")
+        raise typer.Exit(code=1)
+
+    # Compute quantity from budget and cap of ticket's max size pct relative to total_usdt
+    ticket_cap = (size_pct_max / 100.0) * max(total_usdt, 1.0)
+    notional = min(budget, ticket_cap)
+    quantity = max(0.0, notional / price)
+    if quantity <= 0:
+        console.print("❌ [red]Computed quantity is zero; aborting.")
+        raise typer.Exit(code=1)
+
+    # Determine limit price policy: if override provided, use as-is; otherwise slight improvement
+    use_override = price_override is not None and price_override > 0
+    limit_price = price if use_override else price * (0.995 if side == "BUY" else 1.005)
+
+    # Align price and quantity to exchange filters (best-effort)
+    try:
+        exch = ExchangeService(get_client())
+        symbol_info = exch.get_symbol_info(symbol)
+        tick_size = None
+        step_size = None
+        if symbol_info:
+            for f in symbol_info.get("filters", []):
+                if f.get("filterType") == "PRICE_FILTER":
+                    tick_size = float(f.get("tickSize", 0) or 0)
+                if f.get("filterType") == "LOT_SIZE":
+                    step_size = float(f.get("stepSize", 0) or 0)
+
+        def _round_to_increment(val: float, inc: float) -> float:
+            if not inc or inc <= 0:
+                return val
+            import math
+
+            return math.floor(val / inc) * inc
+
+        if tick_size:
+            limit_price = _round_to_increment(limit_price, tick_size)
+        if step_size:
+            quantity = _round_to_increment(quantity, step_size)
+    except Exception:
+        pass
+
+    try:
+        placed = order_service.place_order(
+            symbol=symbol,
+            side=OrderSide.BUY if side == "BUY" else OrderSide.SELL,
+            order_type=OrderType.LIMIT,
+            quantity=quantity,
+            price=limit_price,
+        )
+        order_id = str(cast(dict[str, Any], placed).get("orderId", "")) if placed else ""
+        ticket["status"] = "approved"
+        ticket["placed_order_id"] = order_id
+        ticket["placed_order"] = {"type": "LIMIT", "qty": quantity, "price": limit_price}
+        _save_queue(path, data)
+        console.print(f"✅ [green]Approved & placed order[/green] for {symbol}: qty={quantity:.6f} price={limit_price:.6f} id={order_id}")
+    except Exception as err:
+        console.print(f"❌ [red]Order placement failed:[/red] {err}")
+        raise typer.Exit(code=1) from None
 
 
 def handle_api_error[F: Callable[..., Any]](func: F) -> F:
@@ -600,6 +936,23 @@ def place_oco_order(
         _display_order_confirmation(result)
 
 
+@order_app.command("place-stop-limit")
+@handle_api_error
+def place_stop_loss_limit(
+    symbol: str = typer.Argument(..., help="Symbol (e.g., BTCUSDT)"),
+    side: OrderSide = typer.Argument(..., help="Side: BUY or SELL", case_sensitive=False),
+    quantity: float = typer.Argument(..., help="Quantity to trade"),
+    price: float = typer.Argument(..., help="Limit price once triggered"),
+    stop_price: float = typer.Argument(..., help="Stop trigger price"),
+) -> None:
+    """Place a STOP_LOSS_LIMIT order (adds downside protection without OCO)."""
+    order_service = OrderService(get_client())
+    console.print(f"Placing STOP_LOSS_LIMIT {side.value.upper()} order for {quantity} {symbol} with limit ${price:,.4f} and stop ${stop_price:,.4f}...")
+    result = order_service.place_order(symbol, side, OrderType.STOP_LOSS_LIMIT, quantity, price=price, stop_price=stop_price)
+    if result:
+        _display_order_confirmation(result)
+
+
 @order_app.command("cancel")
 @handle_api_error
 def cancel_order(
@@ -810,6 +1163,8 @@ def simulate_order_placement(
             order_type_enum = OrderType.MARKET
         elif order_type.upper() == "OCO":
             order_type_enum = OrderType.OCO
+        elif order_type.upper() == "STOP_LOSS_LIMIT":
+            order_type_enum = OrderType.STOP_LOSS_LIMIT
         else:
             console.print(f"❌ [red]Unsupported order type:[/red] {order_type}")
             return
@@ -822,7 +1177,12 @@ def simulate_order_placement(
         validator = OrderValidator(client)
 
         is_valid, validation_errors = validator.validate_order_placement(
-            symbol=symbol, side=order_side, order_type=order_type_enum, quantity=quantity, price=price, stop_price=stop_price
+            symbol=symbol,
+            side=order_side,
+            order_type=order_type_enum,
+            quantity=quantity,
+            price=price,
+            stop_price=stop_price,
         )
 
         if is_valid:
@@ -1126,6 +1486,43 @@ Asset Holdings:
         risk_context = generate_risk_context()
         recent_activity_context = generate_recent_activity_context(account_service)
 
+        # Build budget context & commitments summary
+        # Parse the balance_analysis string to extract key figures if present; otherwise compute fresh
+        available_usdt, commitments_ctx = account_service.get_effective_available_balance("USDT")
+        committed_buy_usdt = float(commitments_ctx.get("buy_orders", 0.0))
+        raw_free_usdt = float(available_usdt + committed_buy_usdt)
+        reserve_target_pct = 30.0
+        per_run_cap_pct = 10.0
+        reserve_target_usdt = (reserve_target_pct / 100.0) * raw_free_usdt
+        per_run_cap_usdt = (per_run_cap_pct / 100.0) * raw_free_usdt
+
+        budget_context = (
+            f"raw_free_usdt: {raw_free_usdt:,.2f}\n"
+            f"committed_buy_usdt: {committed_buy_usdt:,.2f}\n"
+            f"effective_available_usdt: {available_usdt:,.2f}\n"
+            f"reserve_target_usdt (30%): {reserve_target_usdt:,.2f}\n"
+            f"per_run_cap_usdt (10%): {per_run_cap_usdt:,.2f}\n"
+            "Policy: keep ≥30% reserves; per-run cap ≤10%; per-ticket cap ≤ size_pct_max."
+        )
+
+        # Commitments breakdown by symbol (buy orders)
+        open_orders = order_service.get_open_orders()
+        symbol_to_notional: dict[str, float] = {}
+        for o in open_orders:
+            try:
+                if str(o.get("side")) == "BUY" and str(o.get("symbol", "")).endswith("USDT"):
+                    qty = float(o.get("origQty", 0))
+                    price = float(o.get("price", 0))
+                    if price > 0:
+                        symbol_to_notional[o["symbol"]] = symbol_to_notional.get(o["symbol"], 0.0) + qty * price
+            except Exception:
+                continue
+        if symbol_to_notional:
+            lines = [f"- {s}: ${v:,.2f}" for s, v in sorted(symbol_to_notional.items(), key=lambda x: x[0])]
+            order_commitments_summary = "\n".join(lines)
+        else:
+            order_commitments_summary = "(none)"
+
         # Generate and display prompts
         _print_strategy_prompts(
             portfolio_data,
@@ -1135,6 +1532,8 @@ Asset Holdings:
             balance_analysis=balance_analysis,
             risk_context=risk_context,
             recent_activity_context=recent_activity_context,
+            budget_context=budget_context,
+            order_commitments_summary=order_commitments_summary,
         )
 
     else:

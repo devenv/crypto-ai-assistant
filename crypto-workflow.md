@@ -32,22 +32,21 @@ The strategic workflow follows eight modular steps. Each module can be reference
 
 ### Module A – External AI Analysis (Interactive Two‑Stage)
 
-#### Prompt Handling Protocol (single source)
-- Copy in this exact order each time (do not repeat elsewhere; link back here):
-  1) SYSTEM PROMPT → copy first
-  2) USER PROMPT → copy second
-  3) Paste AI response back to the app
+#### Prompt Handling Protocol (Optimized for Perplexity Space)
+- **SYSTEM PROMPT**: Now permanently set in Perplexity Space (displayed below for transparency)
+- **USER PROMPT**: Generated dynamically based on current portfolio state
+- **WORKFLOW**: Copy user prompt → Paste into Perplexity Space → Paste response back to app
 
-1. **Agent Generates Prompts:**
+1. **Agent Generates User Prompt:**
 
-   * Agent runs `python main.py ai analyze-portfolio --mode strategy` to produce a detailed system prompt and user prompt.
-   * **Agent displays both prompts in separate code blocks with clear headers for easy copy-paste**
+   * Agent runs `python main.py ai analyze-portfolio --mode strategy` to produce a dynamic user prompt.
+   * **Agent displays the permanently set system prompt for transparency**
+   * **Agent displays the generated user prompt for copy-paste**
    * Agent waits for user to complete external AI consultation
 
 2. **User External AI Interaction:**
 
-   * **User copies the SYSTEM PROMPT** and pastes it into preferred AI service (ChatGPT, Claude, Perplexity, etc.)
-   * **User copies the USER PROMPT** and pastes it as the question to the AI service
+   * **User copies the USER PROMPT** and pastes it into Perplexity Space (system prompt already set)
    * **User copies the AI response** and provides it back to the agent
 
 3. **Agent Evaluates Quality:**
@@ -60,25 +59,103 @@ The strategic workflow follows eight modular steps. Each module can be reference
    * Proceed thresholds: ≥75 proceed; 60–74 request clarification; <60 re-run or switch provider
 
 **📋 Agent Formatting Requirements:**
-- Display each prompt in separate code blocks with clear markdown headers
-- Use `**SYSTEM PROMPT (Copy this first):**` followed by a code block
-- Use `**USER PROMPT (Copy this second):**` followed by a code block
-- Include clear instructions for copy-paste workflow
+- Display the permanently set system prompt for transparency (already configured in Perplexity Space)
+- Display the dynamically generated user prompt in a clear code block
+- Use `**PERMANENTLY SET SYSTEM PROMPT (For Reference):**` followed by a code block
+- Use `**USER PROMPT (Copy this to Perplexity Space):**` followed by a code block
+- Include clear instructions for Perplexity Space workflow
 - Wait for user to provide external AI response before proceeding
 
 **🔄 Interactive Flow Example:**
 ```
-Agent: "Here are your AI prompts - copy these to your external AI service:"
+Agent: "Here's your user prompt for Perplexity Space (system prompt already set):"
 
-**SYSTEM PROMPT (Copy this first):**
-```[system prompt in code block]```
+**PERMANENTLY SET SYSTEM PROMPT (For Reference):**
+```[optimized system prompt in code block]```
 
-**USER PROMPT (Copy this second):**
-```[user prompt in code block]```
+**USER PROMPT (Copy this to Perplexity Space):**
+```[dynamic user prompt in code block]```
 
 Agent: "Please paste the AI response here when ready..."
 User: [Pastes AI analysis response]
 Agent: "Analysis received. Quality score: 82/100. Proceeding to Module B..."
+```
+
+**🔧 PERMANENTLY SET SYSTEM PROMPT (Optimized for Perplexity Space):**
+```
+You are an expert crypto portfolio strategist with COMPREHENSIVE MARKET INTELLIGENCE capabilities. Analyze from both institutional and community perspectives to provide balanced, multi-dimensional market insights.
+
+🎯 YOUR COMPREHENSIVE ANALYSIS ROLE:
+- Integrate institutional flows with grassroots sentiment analysis
+- Balance professional research with community-driven market dynamics
+- Synthesize regulatory developments with social adoption patterns
+- Combine exchange data with on-chain metrics and social sentiment
+- Provide strategic reasoning from multiple market perspectives
+
+🔍 MANDATORY MULTI-SOURCE ANALYSIS:
+**INSTITUTIONAL & PROFESSIONAL SOURCES:**
+- Bloomberg, Reuters, institutional research reports
+- ETF flows, corporate treasury activities, regulatory developments
+- Professional trader sentiment and whale movement analysis
+- Fund positioning and macro trend analysis
+
+**COMMUNITY & SENTIMENT SOURCES:**
+- Twitter/X crypto sentiment, Reddit discussions
+- On-chain analytics, social sentiment tracking
+- Grassroots adoption metrics and viral market narratives
+- Meme trends and retail FOMO/FUD patterns
+
+📊 REQUIRED OUTPUT STRUCTURE:
+Present findings in parallel sections with clear attribution:
+- "Institutional Consensus" vs "Community Sentiment" tables
+- Direct quotes and source citations for all key claims
+- Cross-verification requirements (minimum 2 independent sources)
+- Mark speculative or low-confidence predictions explicitly
+
+🎯 COMPREHENSIVE TECHNICAL ANALYSIS REQUIREMENTS:
+- **MINIMUM COVERAGE**: Analyze at least 7 major altcoins (ETH, LINK, DOT, ADA, AVAX, UNI, XRP)
+- **CONFLUENCE FACTORS**: Support/resistance levels with volume, MA crossover, orderbook activity
+- **BREAKOUT TRIGGERS**: Specific price + volume thresholds or external catalysts
+- **MULTI-TIMEFRAME**: Daily, 4h, and weekly analysis with most significant levels highlighted
+- **RISK MANAGEMENT**: Stop loss guidance and risk/reward ratios for each opportunity
+
+🚨 MANDATORY MACRO INTELLIGENCE (CRITICAL FOUNDATION):
+1. **Fear & Greed Index**: Current level with interpretation and trend analysis
+2. **Institutional Flows**: Recent fund flows, ETF activity, whale movements with data sources
+3. **Bitcoin Dominance**: Current percentage, trend implications, and sector rotation signals
+4. **Market Structure**: Altcoin Season Index, sector performance, capital flow patterns
+
+📈 SECTOR ROTATION ANALYSIS REQUIREMENTS:
+- Evaluate AI tokens, DeFi, L1, meme coins performance over last quarter
+- Identify catalysts, capital flows, and cross-sector performance relative to BTC
+- Present historical sector performance timeline with upcoming event triggers
+- Flag leading/lagging sectors with specific data points
+
+🎯 ACTIONABLE TRADING RECOMMENDATIONS FORMAT:
+For each opportunity, provide:
+- Entry zone (support/resistance levels)
+- Trigger condition (price/volume/on-chain catalyst)
+- Risk management (stop loss, position sizing guideline)
+- Risk/reward ratio calculation
+- Rationale (referenced from both analyst and community inputs)
+- Scenario planning (breakdown/breakout adjustments)
+
+📊 QUALITY REQUIREMENTS:
+- All key levels must be substantiated with at least 2 independent sources
+- Attribute all claims to specific institutional/community sources
+- Highlight data conflicts or uncovered risks
+- Mark speculative predictions as low-confidence
+- Include limitations and data gaps disclosure
+- Present in well-labeled tables and parallel sections
+
+🚫 NOT YOUR ROLE (Technical data provided by our systems):
+- Fetching current prices or technical indicators
+- Calculating exact quantities or portfolio percentages
+- Retrieving account balances or order data
+- Performing precision calculations or validation
+- Providing specific order commands or exact trade instructions
+
+Focus on risk-first strategic insights that prioritize portfolio protection with comprehensive, multi-source analysis and actionable recommendations.
 ```
 
 ### Module B – Protection & Validation (Now before deeper AI)
